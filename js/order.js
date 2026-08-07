@@ -1,4 +1,4 @@
-// js/order.js - VERSI FINAL
+// js/order.js - PERBAIKI ERROR NULL
 
 // ===== KONFIGURASI =====
 const API_BASE_URL = '/.netlify/functions/rajaongkir';
@@ -31,6 +31,11 @@ function loadOrderItems() {
     const container = document.getElementById('order-items');
     const totalContainer = document.getElementById('order-total');
     const beratContainer = document.getElementById('order-berat');
+
+    if (!container) {
+        console.warn('⚠️ order-items element not found');
+        return;
+    }
 
     if (order.items.length === 0) {
         container.innerHTML = `
@@ -70,10 +75,14 @@ function loadOrderItems() {
     if (totalContainer) totalContainer.textContent = `Rp ${formatRupiah(order.total)}`;
     if (beratContainer) beratContainer.textContent = `${order.total_berat} g`;
 
-    // Update hidden fields
-    document.getElementById('order-items-json').value = JSON.stringify(order.items);
-    document.getElementById('subtotal').value = order.total;
-    document.getElementById('total-berat').value = order.total_berat;
+    // Update hidden fields - dengan null check
+    const itemsJson = document.getElementById('order-items-json');
+    const subtotal = document.getElementById('subtotal');
+    const totalBerat = document.getElementById('total-berat');
+    
+    if (itemsJson) itemsJson.value = JSON.stringify(order.items);
+    if (subtotal) subtotal.value = order.total;
+    if (totalBerat) totalBerat.value = order.total_berat;
 }
 
 // ============================================
@@ -111,6 +120,11 @@ function removeItem(productId) {
 // ============================================
 async function searchDestination(query) {
     const resultsContainer = document.getElementById('search-results');
+    
+    if (!resultsContainer) {
+        console.warn('⚠️ search-results element not found');
+        return;
+    }
     
     if (!query || query.length < 3) {
         resultsContainer.classList.remove('show');
@@ -171,13 +185,20 @@ function selectSearchResult(id, name, city, province) {
         return;
     }
     
-    document.getElementById('search-results').classList.remove('show');
-    document.getElementById('search-destination').value = name;
-    
+    const resultsContainer = document.getElementById('search-results');
+    const searchInput = document.getElementById('search-destination');
     const selectedLocation = document.getElementById('selected-location');
-    document.getElementById('selected-location-text').textContent = `${name}, ${city}, ${province}`;
-    document.getElementById('selected-subdistrict').value = id;
-    selectedLocation.classList.add('show');
+    const locationText = document.getElementById('selected-location-text');
+    const selectedSubdistrict = document.getElementById('selected-subdistrict');
+    
+    if (resultsContainer) resultsContainer.classList.remove('show');
+    if (searchInput) searchInput.value = name;
+    
+    if (selectedLocation && locationText && selectedSubdistrict) {
+        locationText.textContent = `${name}, ${city}, ${province}`;
+        selectedSubdistrict.value = id;
+        selectedLocation.classList.add('show');
+    }
     
     calculateShippingWithSubdistrict(id);
 }
@@ -197,11 +218,16 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total_berat": 0}');
     const totalWeight = order.total_berat || 1000;
 
+    const costDisplay = document.getElementById('shipping-cost-display');
+    const serviceDisplay = document.getElementById('shipping-service');
+    const loader = document.getElementById('shipping-loader');
+    const optionsContainer = document.getElementById('shipping-options');
+
     try {
-        document.getElementById('shipping-cost-display').textContent = 'Menghitung...';
-        document.getElementById('shipping-service').textContent = '';
-        document.getElementById('shipping-loader').style.display = 'block';
-        document.getElementById('shipping-options').innerHTML = '<div style="color:#6c757d;">⏳ Menghitung ongkir...</div>';
+        if (costDisplay) costDisplay.textContent = 'Menghitung...';
+        if (serviceDisplay) serviceDisplay.textContent = '';
+        if (loader) loader.style.display = 'block';
+        if (optionsContainer) optionsContainer.innerHTML = '<div style="color:#6c757d;">⏳ Menghitung ongkir...</div>';
         
         const formData = new URLSearchParams();
         formData.append('origin', ORIGIN_SUBDISTRICT_ID);
@@ -240,12 +266,14 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
             displayShippingOptions(costs);
             const cheapest = costs.reduce((min, cost) => cost.price < min.price ? cost : min);
             
-            document.getElementById('shipping-cost').value = cheapest.price;
-            document.getElementById('shipping-cost-display').textContent = `Rp ${formatRupiah(cheapest.price)}`;
-            document.getElementById('shipping-service').textContent = 
-                `${cheapest.courier_name} - ${cheapest.service} (${cheapest.etd} hari)`;
-            document.getElementById('shipping-service').style.color = '#28a745';
-            document.getElementById('shipping-loader').style.display = 'none';
+            const shippingCost = document.getElementById('shipping-cost');
+            if (shippingCost) shippingCost.value = cheapest.price;
+            if (costDisplay) costDisplay.textContent = `Rp ${formatRupiah(cheapest.price)}`;
+            if (serviceDisplay) {
+                serviceDisplay.textContent = `${cheapest.courier_name} - ${cheapest.service} (${cheapest.etd} hari)`;
+                serviceDisplay.style.color = '#28a745';
+            }
+            if (loader) loader.style.display = 'none';
             updateTotal();
         } else {
             throw new Error('Tidak ada pilihan ongkir');
@@ -258,12 +286,20 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
 }
 
 function resetShippingDisplay() {
-    document.getElementById('shipping-cost').value = 0;
-    document.getElementById('shipping-cost-display').textContent = 'Rp 0';
-    document.getElementById('shipping-service').textContent = '⚠️ Gagal menghitung ongkir';
-    document.getElementById('shipping-service').style.color = '#dc3545';
-    document.getElementById('shipping-loader').style.display = 'none';
-    document.getElementById('shipping-options').innerHTML = '';
+    const shippingCost = document.getElementById('shipping-cost');
+    const costDisplay = document.getElementById('shipping-cost-display');
+    const serviceDisplay = document.getElementById('shipping-service');
+    const loader = document.getElementById('shipping-loader');
+    const optionsContainer = document.getElementById('shipping-options');
+    
+    if (shippingCost) shippingCost.value = 0;
+    if (costDisplay) costDisplay.textContent = 'Rp 0';
+    if (serviceDisplay) {
+        serviceDisplay.textContent = '⚠️ Gagal menghitung ongkir';
+        serviceDisplay.style.color = '#dc3545';
+    }
+    if (loader) loader.style.display = 'none';
+    if (optionsContainer) optionsContainer.innerHTML = '';
 }
 
 function displayShippingOptions(costs) {
@@ -308,13 +344,13 @@ async function submitOrder(event) {
         return;
     }
 
-    const customerName = document.getElementById('customer-name').value.trim();
-    const customerPhone = document.getElementById('customer-phone').value.trim();
-    const customerAddress = document.getElementById('customer-address').value.trim();
-    const notes = document.getElementById('order-notes').value.trim();
+    const customerName = document.getElementById('customer-name')?.value?.trim();
+    const customerPhone = document.getElementById('customer-phone')?.value?.trim();
+    const customerAddress = document.getElementById('customer-address')?.value?.trim();
+    const notes = document.getElementById('order-notes')?.value?.trim();
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'QRIS';
-    const subdistrictId = document.getElementById('selected-subdistrict').value;
-    const shippingCost = parseInt(document.getElementById('shipping-cost').value) || 0;
+    const subdistrictId = document.getElementById('selected-subdistrict')?.value;
+    const shippingCost = parseInt(document.getElementById('shipping-cost')?.value) || 0;
 
     if (!customerName || !customerPhone || !customerAddress) {
         showNotification('Mohon lengkapi data pemesan!', 'error');
@@ -340,7 +376,7 @@ async function submitOrder(event) {
         shipping_subdistrict: subdistrictId,
         payment_method: paymentMethod,
         payment_status: 'Menunggu Verifikasi pembayaran',
-        notes: notes,
+        notes: notes || '',
         status: 'pending'
     };
 
@@ -395,6 +431,8 @@ function sendWAOrderNotification(orderData) {
 
 function showSuccessPage(orderNumber) {
     const container = document.getElementById('order-form-container');
+    if (!container) return;
+    
     container.innerHTML = `
         <div class="order-success">
             <i class="fas fa-check-circle fa-4x" style="color:#28a745;"></i>
@@ -420,7 +458,9 @@ function updateTotal() {
     const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
     const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
     const total = subtotal + shipping;
-    document.getElementById('order-total').textContent = `Rp ${formatRupiah(total)}`;
+    
+    const orderTotal = document.getElementById('order-total');
+    if (orderTotal) orderTotal.textContent = `Rp ${formatRupiah(total)}`;
     
     const paymentTotal = document.getElementById('payment-total');
     if (paymentTotal) paymentTotal.textContent = `Rp ${formatRupiah(total)}`;
@@ -435,9 +475,12 @@ function showNotification(message, type = 'info') {
 }
 
 function toggleShippingMethod() {
-    const method = document.getElementById('shipping-method').value;
-    document.getElementById('step-method').style.display = method === 'step' ? 'block' : 'none';
-    document.getElementById('search-method').style.display = method === 'search' ? 'block' : 'none';
+    const method = document.getElementById('shipping-method')?.value;
+    const stepMethod = document.getElementById('step-method');
+    const searchMethod = document.getElementById('search-method');
+    
+    if (stepMethod) stepMethod.style.display = method === 'step' ? 'block' : 'none';
+    if (searchMethod) searchMethod.style.display = method === 'search' ? 'block' : 'none';
 }
 
 // ============================================
@@ -449,7 +492,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setOrigin();
     loadOrderItems();
     
-    document.getElementById('shipping-method').value = 'search';
+    // Set default method ke search
+    const shippingMethod = document.getElementById('shipping-method');
+    if (shippingMethod) {
+        shippingMethod.value = 'search';
+    }
     toggleShippingMethod();
     
     // Search input
@@ -458,23 +505,37 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', function(e) {
             searchDestination(e.target.value.trim());
         });
+    } else {
+        console.warn('⚠️ search-destination element not found');
     }
     
     // Close results on click outside
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('#search-destination') && !e.target.closest('#search-results')) {
-            document.getElementById('search-results').classList.remove('show');
+        const resultsContainer = document.getElementById('search-results');
+        const searchInputEl = document.getElementById('search-destination');
+        if (resultsContainer && searchInputEl) {
+            if (!e.target.closest('#search-destination') && !e.target.closest('#search-results')) {
+                resultsContainer.classList.remove('show');
+            }
         }
     });
     
     // Courier change
-    document.getElementById('courier-select')?.addEventListener('change', function() {
-        const subdistrictId = document.getElementById('selected-subdistrict')?.value;
-        if (subdistrictId) calculateShippingWithSubdistrict(subdistrictId);
-    });
+    const courierSelect = document.getElementById('courier-select');
+    if (courierSelect) {
+        courierSelect.addEventListener('change', function() {
+            const subdistrictId = document.getElementById('selected-subdistrict')?.value;
+            if (subdistrictId) calculateShippingWithSubdistrict(subdistrictId);
+        });
+    }
     
     // Form submit
-    document.getElementById('order-form').addEventListener('submit', submitOrder);
+    const orderForm = document.getElementById('order-form');
+    if (orderForm) {
+        orderForm.addEventListener('submit', submitOrder);
+    } else {
+        console.warn('⚠️ order-form element not found');
+    }
     
     console.log('✅ Order page initialized');
 });
@@ -489,3 +550,12 @@ window.selectSearchResult = selectSearchResult;
 window.toggleShippingMethod = toggleShippingMethod;
 window.calculateShippingWithSubdistrict = calculateShippingWithSubdistrict;
 window.submitOrder = submitOrder;
+window.updateOrderBadge = function() {
+    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
+    const badge = document.getElementById('order-badge');
+    if (badge) {
+        const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+        badge.textContent = totalItems;
+        badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+    }
+};
