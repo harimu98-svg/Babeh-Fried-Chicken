@@ -6,7 +6,7 @@ const API_BASE_URL = '/.netlify/functions/rajaongkir';
 // ===== HARDCODE ORIGIN (LOKASI TOKO DI DEPOK) =====
 // Ganti dengan subdistrict_id yang sesuai dengan alamat toko Anda
 // Untuk Bojongsari, Depok
-const ORIGIN_SUBDISTRICT_ID = 'YOUR_SUBDISTRICT_ID'; // Ganti dengan ID yang didapat
+const ORIGIN_SUBDISTRICT_ID = '187'; // Ganti dengan ID yang didapat
 const ORIGIN_NAME = 'Bojongsari, Depok, Jawa Barat'; // Nama lokasi
 
 // Contoh jika sudah tahu ID-nya:
