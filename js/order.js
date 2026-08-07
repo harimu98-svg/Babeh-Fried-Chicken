@@ -1,12 +1,13 @@
-// js/order.js - UPDATE DENGAN ENDPOINT YANG BENAR
+// js/order.js - VERSI FINAL
 
 // ===== KONFIGURASI =====
 const API_BASE_URL = '/.netlify/functions/rajaongkir';
 
-// ===== LOAD PROVINCES =====
+// ============================================
+// 1. LOAD PROVINCES
+// ============================================
 async function loadShippingCosts() {
     try {
-        // Gunakan endpoint provinces yang baru
         const response = await fetch(`${API_BASE_URL}/provinces`);
         const data = await response.json();
         
@@ -34,25 +35,19 @@ async function loadShippingCosts() {
     }
 }
 
-// ===== LOAD CITIES =====
+// ============================================
+// 2. LOAD CITIES
+// ============================================
 async function loadCities(provinceId) {
-    if (!provinceId || provinceId === 'undefined' || provinceId === '') {
-        const citySelect = document.getElementById('city-select');
-        if (citySelect) {
-            citySelect.innerHTML = '<option value="">Pilih Kota</option>';
-            citySelect.disabled = true;
-        }
+    if (!provinceId || provinceId === 'undefined') {
+        resetSelect('city-select', 'Pilih Kota');
+        resetSelect('district-select', 'Pilih Kecamatan');
         return;
     }
 
     try {
-        const citySelect = document.getElementById('city-select');
-        if (citySelect) {
-            citySelect.disabled = false;
-            citySelect.innerHTML = '<option value="">Memuat kota...</option>';
-        }
+        setLoading('city-select', 'Memuat kota...');
         
-        // Gunakan endpoint cities dengan province_id
         const response = await fetch(`${API_BASE_URL}/cities?province_id=${provinceId}`);
         const data = await response.json();
         
@@ -63,27 +58,16 @@ async function loadCities(provinceId) {
             if (!select) return;
             
             select.innerHTML = '<option value="">Pilih Kota</option>';
+            select.disabled = false;
+            
             if (data.rajaongkir.results && data.rajaongkir.results.length > 0) {
-                // Group by city (remove duplicates)
-                const cityMap = new Map();
-                data.rajaongkir.results.forEach(item => {
-                    if (!cityMap.has(item.city_id)) {
-                        cityMap.set(item.city_id, {
-                            city_id: item.city_id,
-                            city_name: item.city_name,
-                            type: item.type
-                        });
-                    }
-                });
-                
-                const uniqueCities = Array.from(cityMap.values());
-                uniqueCities.forEach(city => {
+                data.rajaongkir.results.forEach(city => {
                     const option = document.createElement('option');
                     option.value = city.city_id;
                     option.textContent = `${city.type} ${city.city_name}`;
                     select.appendChild(option);
                 });
-                console.log(`✅ ${uniqueCities.length} cities loaded`);
+                console.log(`✅ ${data.rajaongkir.results.length} cities loaded`);
             } else {
                 select.innerHTML = '<option value="">Tidak ada kota ditemukan</option>';
             }
@@ -92,34 +76,23 @@ async function loadCities(provinceId) {
         }
     } catch (error) {
         console.error('Error loading cities:', error);
-        const select = document.getElementById('city-select');
-        if (select) {
-            select.innerHTML = '<option value="">Gagal memuat kota</option>';
-            select.disabled = true;
-        }
+        setError('city-select', 'Gagal memuat kota');
         showNotification('Gagal memuat data kota', 'error');
     }
 }
 
-// ===== LOAD SUBDISTRICTS =====
+// ============================================
+// 3. LOAD SUBDISTRICTS
+// ============================================
 async function loadSubdistricts(cityId) {
-    if (!cityId || cityId === 'undefined' || cityId === '') {
-        const districtSelect = document.getElementById('district-select');
-        if (districtSelect) {
-            districtSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
-            districtSelect.disabled = true;
-        }
+    if (!cityId || cityId === 'undefined') {
+        resetSelect('district-select', 'Pilih Kecamatan');
         return;
     }
 
     try {
-        const districtSelect = document.getElementById('district-select');
-        if (districtSelect) {
-            districtSelect.disabled = false;
-            districtSelect.innerHTML = '<option value="">Memuat kecamatan...</option>';
-        }
+        setLoading('district-select', 'Memuat kecamatan...');
         
-        // Gunakan endpoint subdistricts dengan city_id
         const response = await fetch(`${API_BASE_URL}/subdistricts?city_id=${cityId}`);
         const data = await response.json();
         
@@ -130,6 +103,8 @@ async function loadSubdistricts(cityId) {
             if (!select) return;
             
             select.innerHTML = '<option value="">Pilih Kecamatan</option>';
+            select.disabled = false;
+            
             if (data.rajaongkir.results && data.rajaongkir.results.length > 0) {
                 data.rajaongkir.results.forEach(item => {
                     const option = document.createElement('option');
@@ -146,21 +121,19 @@ async function loadSubdistricts(cityId) {
         }
     } catch (error) {
         console.error('Error loading subdistricts:', error);
-        const select = document.getElementById('district-select');
-        if (select) {
-            select.innerHTML = '<option value="">Gagal memuat kecamatan</option>';
-            select.disabled = true;
-        }
+        setError('district-select', 'Gagal memuat kecamatan');
         showNotification('Gagal memuat data kecamatan', 'error');
     }
 }
 
-// ===== CALCULATE SHIPPING =====
+// ============================================
+// 4. CALCULATE SHIPPING
+// ============================================
 async function calculateShipping() {
     const subdistrictId = document.getElementById('district-select')?.value;
     if (!subdistrictId) {
-        const shippingCost = document.getElementById('shipping-cost');
-        if (shippingCost) shippingCost.value = 0;
+        document.getElementById('shipping-cost').value = 0;
+        document.getElementById('shipping-service').textContent = '';
         updateTotal();
         return;
     }
@@ -171,11 +144,9 @@ async function calculateShipping() {
     try {
         const response = await fetch(`${API_BASE_URL}/cost`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                origin: '501', // Jakarta Pusat (subdistrict_id)
+                origin: '501', // Ganti dengan subdistrict_id toko Anda
                 destination: subdistrictId,
                 weight: totalWeight * 1000,
                 courier: 'jne'
@@ -194,14 +165,9 @@ async function calculateShipping() {
                     return price < min.cost[0].value ? cost : min;
                 });
                 
-                const shippingCost = document.getElementById('shipping-cost');
-                if (shippingCost) shippingCost.value = cheapest.cost[0].value;
-                
-                const shippingService = document.getElementById('shipping-service');
-                if (shippingService) {
-                    shippingService.textContent = 
-                        `${cheapest.service} - ${cheapest.description} (${cheapest.cost[0].etd} hari)`;
-                }
+                document.getElementById('shipping-cost').value = cheapest.cost[0].value;
+                document.getElementById('shipping-service').textContent = 
+                    `${cheapest.service} - ${cheapest.description} (${cheapest.cost[0].etd} hari)`;
                 updateTotal();
             }
         } else {
@@ -209,8 +175,126 @@ async function calculateShipping() {
         }
     } catch (error) {
         console.error('Error calculating shipping:', error);
-        const shippingCost = document.getElementById('shipping-cost');
-        if (shippingCost) shippingCost.value = 0;
+        document.getElementById('shipping-cost').value = 0;
         showNotification('Gagal menghitung ongkir', 'error');
     }
 }
+
+// ============================================
+// 5. HELPER FUNCTIONS
+// ============================================
+function resetSelect(id, placeholder) {
+    const select = document.getElementById(id);
+    if (select) {
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+        select.disabled = true;
+    }
+}
+
+function setLoading(id, text) {
+    const select = document.getElementById(id);
+    if (select) {
+        select.innerHTML = `<option value="">${text}</option>`;
+        select.disabled = true;
+    }
+}
+
+function setError(id, text) {
+    const select = document.getElementById(id);
+    if (select) {
+        select.innerHTML = `<option value="">${text}</option>`;
+        select.disabled = true;
+    }
+}
+
+function updateTotal() {
+    const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
+    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
+    const total = subtotal + shipping;
+    const grandTotal = document.getElementById('grand-total');
+    if (grandTotal) grandTotal.textContent = formatRupiah(total);
+}
+
+function formatRupiah(amount) {
+    return new Intl.NumberFormat('id-ID').format(amount);
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+// ============================================
+// 6. STATIC PROVINCES (FALLBACK)
+// ============================================
+function loadStaticProvinces() {
+    const staticProvinces = [
+        { id: '1', name: 'Aceh' },
+        { id: '2', name: 'Sumatera Utara' },
+        { id: '3', name: 'Sumatera Barat' },
+        { id: '4', name: 'Riau' },
+        { id: '5', name: 'Kepulauan Riau' },
+        { id: '6', name: 'Jambi' },
+        { id: '7', name: 'Bengkulu' },
+        { id: '8', name: 'Sumatera Selatan' },
+        { id: '9', name: 'Kepulauan Bangka Belitung' },
+        { id: '10', name: 'Lampung' },
+        { id: '11', name: 'DKI Jakarta' },
+        { id: '12', name: 'Jawa Barat' },
+        { id: '13', name: 'Banten' },
+        { id: '14', name: 'Jawa Tengah' },
+        { id: '15', name: 'DI Yogyakarta' },
+        { id: '16', name: 'Jawa Timur' },
+        { id: '17', name: 'Bali' },
+        { id: '18', name: 'Nusa Tenggara Barat' },
+        { id: '19', name: 'Nusa Tenggara Timur' },
+        { id: '20', name: 'Kalimantan Barat' },
+        { id: '21', name: 'Kalimantan Tengah' },
+        { id: '22', name: 'Kalimantan Selatan' },
+        { id: '23', name: 'Kalimantan Timur' },
+        { id: '24', name: 'Kalimantan Utara' },
+        { id: '25', name: 'Sulawesi Utara' },
+        { id: '26', name: 'Gorontalo' },
+        { id: '27', name: 'Sulawesi Tengah' },
+        { id: '28', name: 'Sulawesi Selatan' },
+        { id: '29', name: 'Sulawesi Tenggara' },
+        { id: '30', name: 'Sulawesi Barat' },
+        { id: '31', name: 'Maluku' },
+        { id: '32', name: 'Maluku Utara' },
+        { id: '33', name: 'Papua' },
+        { id: '34', name: 'Papua Barat' }
+    ];
+
+    const select = document.getElementById('province-select');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">Pilih Provinsi</option>';
+    staticProvinces.forEach(province => {
+        const option = document.createElement('option');
+        option.value = province.id;
+        option.textContent = province.name;
+        select.appendChild(option);
+    });
+}
+
+// ============================================
+// 7. INISIALISASI
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    loadShippingCosts();
+    
+    document.getElementById('province-select')?.addEventListener('change', function() {
+        loadCities(this.value);
+    });
+    
+    document.getElementById('city-select')?.addEventListener('change', function() {
+        loadSubdistricts(this.value);
+    });
+    
+    document.getElementById('district-select')?.addEventListener('change', function() {
+        calculateShipping();
+    });
+});
