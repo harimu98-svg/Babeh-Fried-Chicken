@@ -1,35 +1,24 @@
 // netlify/functions/rajaongkir.js
-// 🚨 JANGAN PAKAI require('axios') di Netlify Functions v2!
-// Gunakan fetch bawaan Node.js 18+
-
 exports.handler = async function(event, context) {
-    // CORS Headers
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
     };
 
-    // Handle preflight (OPTIONS)
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: ''
-        };
+        return { statusCode: 200, headers, body: '' };
     }
 
-    // Ambil API Key dari environment variable
     const API_KEY = process.env.RAJA_ONGKIR_API_KEY;
     const BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
-    // Validasi API Key
     if (!API_KEY) {
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
-                error: 'RAJA_ONGKIR_API_KEY not configured in environment variables' 
+                error: 'RAJA_ONGKIR_API_KEY not configured' 
             })
         };
     }
@@ -42,12 +31,14 @@ exports.handler = async function(event, context) {
             const response = await fetch(`${BASE_URL}/destination/province`, {
                 headers: { 'key': API_KEY }
             });
-            const data = await response.json();
+            const result = await response.json();
             
+            // ✅ KONSISTEN: kirim dengan format yang sama
+            // Jika response dari RajaOngkir sudah punya format sendiri
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(data)
+                body: JSON.stringify(result)
             };
         }
 
@@ -57,12 +48,12 @@ exports.handler = async function(event, context) {
             const response = await fetch(`${BASE_URL}/destination/city?province=${province}`, {
                 headers: { 'key': API_KEY }
             });
-            const data = await response.json();
+            const result = await response.json();
             
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(data)
+                body: JSON.stringify(result)
             };
         }
 
@@ -72,12 +63,12 @@ exports.handler = async function(event, context) {
             const response = await fetch(`${BASE_URL}/destination/district?city=${city}`, {
                 headers: { 'key': API_KEY }
             });
-            const data = await response.json();
+            const result = await response.json();
             
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(data)
+                body: JSON.stringify(result)
             };
         }
 
