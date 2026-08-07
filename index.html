@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* ===== RESET & BASE ===== */
         * {
             margin: 0;
             padding: 0;
@@ -19,7 +20,7 @@
             color: #333;
         }
 
-        /* Header */
+        /* ===== HEADER ===== */
         .header {
             background: linear-gradient(135deg, #dc3545, #c82333);
             color: white;
@@ -37,6 +38,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .logo {
@@ -51,8 +54,9 @@
 
         .nav-menu {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .nav-menu a {
@@ -60,6 +64,7 @@
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s;
+            font-size: 0.95rem;
         }
 
         .nav-menu a:hover {
@@ -87,9 +92,9 @@
             display: none;
         }
 
-        /* Hero Section */
+        /* ===== HERO SECTION ===== */
         .hero {
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('images/logo.jpg');
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('images/hero-bg.jpg');
             background-size: cover;
             background-position: center;
             color: white;
@@ -107,6 +112,7 @@
             margin-bottom: 2rem;
         }
 
+        /* ===== BUTTONS ===== */
         .btn {
             display: inline-block;
             padding: 12px 30px;
@@ -118,6 +124,7 @@
             text-decoration: none;
             transition: all 0.3s;
             cursor: pointer;
+            font-size: 1rem;
         }
 
         .btn:hover {
@@ -135,7 +142,22 @@
             box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
         }
 
-        /* Sections */
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== SECTIONS ===== */
         .section {
             padding: 60px 20px;
             max-width: 1200px;
@@ -153,7 +175,7 @@
             color: #ffd700;
         }
 
-        /* Products */
+        /* ===== PRODUCTS ===== */
         .category-section {
             margin-bottom: 3rem;
         }
@@ -216,6 +238,7 @@
             color: #666;
             font-size: 0.9rem;
             margin-bottom: 1rem;
+            min-height: 40px;
         }
 
         .product-price {
@@ -241,7 +264,7 @@
             background: #f0c000;
         }
 
-        /* Order Form */
+        /* ===== ORDER FORM ===== */
         .order-form-container {
             background: white;
             padding: 2rem;
@@ -249,8 +272,20 @@
             box-shadow: 0 3px 15px rgba(0,0,0,0.1);
         }
 
+        .order-form-container h3 {
+            color: #dc3545;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .order-form-container h3:first-of-type {
+            margin-top: 0;
+        }
+
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
         }
 
         .form-group label {
@@ -259,23 +294,66 @@
             font-weight: 500;
         }
 
+        .form-group label .required {
+            color: #dc3545;
+        }
+
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
             border-radius: 8px;
             font-size: 1rem;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #dc3545;
+            outline: none;
+        }
+
+        .form-group select:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .form-group select.loading {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" stroke="%23dc3545" stroke-width="5" fill="none" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" from="200" to="0" dur="1.5s" repeatCount="indefinite"/></circle></svg>');
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 20px;
         }
 
         .form-group textarea {
-            min-height: 100px;
+            min-height: 80px;
             resize: vertical;
         }
 
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        .form-group .error-text {
+            color: #dc3545;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* ===== ORDER ITEMS ===== */
         .order-items {
-            margin: 1.5rem 0;
+            margin: 1rem 0;
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .order-item {
@@ -286,10 +364,27 @@
             border-bottom: 1px solid #eee;
         }
 
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 500;
+        }
+
+        .item-price {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
         .item-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .qty-btn {
@@ -300,10 +395,21 @@
             border-radius: 50%;
             cursor: pointer;
             font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .qty-btn:hover {
             background: #f0f0f0;
+            border-color: #dc3545;
+        }
+
+        .item-qty {
+            min-width: 20px;
+            text-align: center;
+            font-weight: 500;
         }
 
         .remove-btn {
@@ -312,99 +418,247 @@
             color: #dc3545;
             cursor: pointer;
             font-size: 1rem;
+            padding: 5px;
+            transition: transform 0.2s;
         }
 
-        /* Chat Widget */
-        .chat-widget {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 999;
+        .remove-btn:hover {
+            transform: scale(1.2);
         }
 
-        .chat-toggle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #25d366;
-            color: white;
-            border: none;
-            font-size: 2rem;
-            cursor: pointer;
-            box-shadow: 0 3px 15px rgba(37, 211, 102, 0.4);
-            transition: transform 0.3s;
+        .empty-order {
+            text-align: center;
+            padding: 30px 0;
+            color: #6c757d;
         }
 
-        .chat-toggle:hover {
-            transform: scale(1.1);
+        .empty-order i {
+            color: #ddd;
+            margin-bottom: 10px;
         }
 
-        .chat-box {
-            position: absolute;
-            bottom: 80px;
-            right: 0;
-            width: 350px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+        .empty-order a {
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .empty-order a:hover {
+            text-decoration: underline;
+        }
+
+        .order-total {
+            text-align: right;
+            font-size: 1.2rem;
+            padding-top: 15px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .order-total span {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        /* ===== SHIPPING COST DISPLAY ===== */
+        .shipping-cost-box {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+
+        .shipping-cost-box .cost-amount {
+            font-size: 1.8rem;
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .shipping-cost-box .cost-service {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .shipping-cost-box .cost-error {
+            color: #dc3545;
+            font-size: 0.9rem;
             display: none;
-            overflow: hidden;
         }
 
-        .chat-box.active {
+        /* ===== PAYMENT METHOD ===== */
+        .payment-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .payment-method {
+            display: block;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .payment-method:hover {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .payment-method input[type="radio"] {
+            display: none;
+        }
+
+        .payment-method.active {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .payment-method i {
+            font-size: 1.5rem;
+            margin-right: 8px;
+        }
+
+        .payment-method .method-name {
+            font-weight: 500;
+        }
+
+        .payment-info-box {
+            margin-top: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .payment-info-box img {
+            max-width: 200px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .payment-info-box .bank-details {
+            font-size: 1.1rem;
+            margin: 10px 0;
+        }
+
+        .payment-info-box .bank-details strong {
+            color: #28a745;
+        }
+
+        /* ===== SEARCH RESULTS ===== */
+        .search-results {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-top: 4px;
+        }
+
+        .search-results.show {
             display: block;
         }
 
-        .chat-header {
-            background: #25d366;
-            color: white;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .chat-messages {
-            max-height: 300px;
-            padding: 1rem;
-            overflow-y: auto;
-        }
-
-        .chat-input {
-            padding: 1rem;
-            border-top: 1px solid #eee;
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-        }
-
-        .quick-messages {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            padding: 0 1rem 1rem;
-        }
-
-        .quick-message {
-            padding: 5px 10px;
-            background: #f0f0f0;
-            border: none;
-            border-radius: 15px;
-            font-size: 0.8rem;
+        .search-result-item {
+            padding: 12px 15px;
             cursor: pointer;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
         }
 
-        .quick-message:hover {
-            background: #e0e0e0;
+        .search-result-item:hover {
+            background: #f8f9fa;
         }
 
-        /* About Page */
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item .result-name {
+            font-weight: 500;
+            display: block;
+        }
+
+        .search-result-item .result-location {
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        .search-result-item .result-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            background: #dc3545;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+
+        .search-no-results {
+            padding: 15px;
+            text-align: center;
+            color: #6c757d;
+        }
+
+        /* ===== SELECTED LOCATION ===== */
+        .selected-location {
+            display: none;
+            padding: 15px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            color: #155724;
+            margin: 10px 0;
+        }
+
+        .selected-location.show {
+            display: block;
+        }
+
+        .selected-location i {
+            margin-right: 8px;
+        }
+
+        /* ===== ORDER SUCCESS ===== */
+        .order-success {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .order-success i {
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .order-success h2 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        .order-success .order-number {
+            font-size: 1.2rem;
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 15px 0;
+        }
+
+        .order-success .btn {
+            margin-top: 20px;
+        }
+
+        /* ===== ABOUT ===== */
         .about-container {
             background: white;
             padding: 2rem;
@@ -481,7 +735,117 @@
             text-decoration: underline;
         }
 
-        /* Notifications */
+        /* ===== CHAT WIDGET ===== */
+        .chat-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999;
+        }
+
+        .chat-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #25d366;
+            color: white;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 3px 15px rgba(37, 211, 102, 0.4);
+            transition: transform 0.3s;
+        }
+
+        .chat-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-box {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            display: none;
+            overflow: hidden;
+        }
+
+        .chat-box.active {
+            display: block;
+        }
+
+        .chat-header {
+            background: #25d366;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-messages {
+            max-height: 250px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .chat-messages p {
+            margin-bottom: 8px;
+        }
+
+        .quick-messages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 0 15px 10px;
+        }
+
+        .quick-message {
+            padding: 5px 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quick-message:hover {
+            background: #e0e0e0;
+        }
+
+        .chat-input {
+            padding: 10px 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 0.95rem;
+        }
+
+        .chat-input button {
+            background: #25d366;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chat-input button:hover {
+            background: #1da851;
+        }
+
+        /* ===== NOTIFICATIONS ===== */
         .notification {
             position: fixed;
             top: 80px;
@@ -492,6 +856,7 @@
             z-index: 9999;
             animation: slideIn 0.3s ease-out;
             max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .notification.success {
@@ -517,60 +882,131 @@
             }
         }
 
-        /* Responsive */
+        /* ===== FOOTER ===== */
+        .footer {
+            background: #333;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        .footer a {
+            color: #25d366;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
             .nav-menu {
+                justify-content: center;
                 gap: 1rem;
             }
-            
+
             .nav-menu a {
-                font-size: 0.9rem;
+                font-size: 0.85rem;
             }
-            
+
             .hero h1 {
                 font-size: 2rem;
             }
-            
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
             .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
                 gap: 1rem;
             }
-            
+
             .vision-mission {
                 grid-template-columns: 1fr;
             }
-            
+
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+
             .chat-box {
                 width: 300px;
-                right: -20px;
+                right: -10px;
+            }
+
+            .order-form-container {
+                padding: 1rem;
+            }
+
+            .advantages-grid {
+                grid-template-columns: 1fr 1fr;
             }
         }
 
         @media (max-width: 480px) {
             .logo {
-                font-size: 1.2rem;
+                font-size: 1.4rem;
             }
-            
+
             .nav-menu a {
-                font-size: 0.8rem;
+                font-size: 0.75rem;
             }
-            
+
+            .hero {
+                padding: 50px 15px;
+            }
+
             .hero h1 {
-                font-size: 1.5rem;
+                font-size: 1.6rem;
             }
-            
-            .section-title {
-                font-size: 1.8rem;
-            }
-            
+
             .products-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.8rem;
+            }
+
+            .product-info {
+                padding: 0.8rem;
+            }
+
+            .product-name {
+                font-size: 0.95rem;
+            }
+
+            .product-price {
+                font-size: 1rem;
+            }
+
+            .btn-order {
+                font-size: 0.85rem;
+                padding: 8px;
+            }
+
+            .advantages-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .contact-info {
+                flex-direction: column;
+                gap: 0.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <!-- ===== HEADER ===== -->
     <header class="header">
         <div class="header-content">
             <div class="logo" onclick="window.location.href='#'">
@@ -589,142 +1025,201 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
+    <!-- ===== HERO SECTION ===== -->
     <section id="home" class="hero">
         <h1>Babeh Fried Chicken</h1>
         <p>Rasa Ayam Goreng yang Bikin Nagih!</p>
         <a href="#order" class="btn">Pesan Sekarang</a>
     </section>
 
-    <!-- Products Section -->
+    <!-- ===== PRODUCTS SECTION ===== -->
     <section id="produk" class="section">
         <h2 class="section-title">Menu <span>Spesial</span></h2>
         <div id="products-container"></div>
     </section>
 
-    <!-- Order Section -->
+    <!-- ===== ORDER SECTION ===== -->
     <section id="order" class="section">
         <h2 class="section-title">Pesan <span>Sekarang</span></h2>
         <div id="order-form-container" class="order-form-container">
             <form id="order-form">
                 <!-- Order Summary -->
-                <div class="order-summary">
-                    <h3>Pesanan Anda</h3>
-                    <div id="order-items" class="order-items"></div>
-                    <div class="order-total">
-                        <strong>Total: </strong>
-                        <span id="order-total">Rp 0</span>
+                <h3><i class="fas fa-shopping-cart"></i> Pesanan Anda</h3>
+                <div id="order-items" class="order-items">
+                    <div class="empty-order">
+                        <i class="fas fa-shopping-cart fa-3x"></i>
+                        <p>Belum ada pesanan</p>
+                        <a href="#produk">Lihat Menu</a>
+                    </div>
+                </div>
+                <div class="order-total">
+                    <strong>Total: </strong>
+                    <span id="order-total">Rp 0</span>
+                </div>
+
+                <!-- Hidden fields -->
+                <input type="hidden" id="order-items-json" name="items">
+                <input type="hidden" id="subtotal" name="subtotal" value="0">
+                <input type="hidden" id="shipping-cost" name="shipping_cost" value="0">
+
+                <!-- Customer Info -->
+                <h3><i class="fas fa-user"></i> Data Pemesan</h3>
+                <div class="form-group">
+                    <label for="customer-name">Nama Lengkap <span class="required">*</span></label>
+                    <input type="text" id="customer-name" name="customer_name" required placeholder="Masukkan nama lengkap">
+                </div>
+
+                <div class="form-group">
+                    <label for="customer-phone">Nomor Telepon <span class="required">*</span></label>
+                    <input type="tel" id="customer-phone" name="customer_phone" required placeholder="08xxxxxxxxxx">
+                    <small>Gunakan nomor WhatsApp yang aktif</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="customer-address">Alamat Lengkap <span class="required">*</span></label>
+                    <textarea id="customer-address" name="customer_address" required placeholder="Jalan, Nomor, RT/RW, Kelurahan, Kecamatan"></textarea>
+                </div>
+
+                <!-- Shipping Section -->
+                <h3><i class="fas fa-truck"></i> Pengiriman</h3>
+
+                <div class="form-group">
+                    <label for="shipping-method">Metode Pencarian Lokasi</label>
+                    <select id="shipping-method" onchange="toggleShippingMethod()">
+                        <option value="step">Step-by-Step (Dropdown)</option>
+                        <option value="search">Direct Search (Cepat)</option>
+                    </select>
+                </div>
+
+                <!-- Method 1: Step-by-Step -->
+                <div id="step-method">
+                    <div class="form-group">
+                        <label for="province-select">Provinsi</label>
+                        <select id="province-select">
+                            <option value="">Pilih Provinsi</option>
+                        </select>
+                        <small id="province-loading" style="display:none;">
+                            <i class="fas fa-spinner fa-spin"></i> Memuat provinsi...
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="city-select">Kota/Kabupaten</label>
+                        <select id="city-select" disabled>
+                            <option value="">Pilih Kota</option>
+                        </select>
+                        <small id="city-loading" style="display:none;">
+                            <i class="fas fa-spinner fa-spin"></i> Memuat kota...
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="district-select">Kecamatan <span class="required">*</span></label>
+                        <select id="district-select" disabled>
+                            <option value="">Pilih Kecamatan</option>
+                        </select>
+                        <small id="district-loading" style="display:none;">
+                            <i class="fas fa-spinner fa-spin"></i> Memuat kecamatan...
+                        </small>
+                        <small>Pilih kecamatan untuk perhitungan ongkir yang akurat</small>
                     </div>
                 </div>
 
-                <!-- Hidden fields for order data -->
-                <input type="hidden" id="order-items-json" name="items">
-                <input type="hidden" id="subtotal" name="subtotal">
+                <!-- Method 2: Direct Search -->
+                <div id="search-method" style="display:none;">
+                    <div class="form-group" style="position:relative;">
+                        <label for="search-destination">Cari Kota/Kecamatan</label>
+                        <input type="text" id="search-destination" 
+                               placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" 
+                               autocomplete="off">
+                        <div class="search-results" id="search-results"></div>
+                        <small>Ketik minimal 3 karakter untuk mulai mencari</small>
+                    </div>
 
-                <!-- Customer Info -->
-                <h3>Data Pemesan</h3>
-                <div class="form-group">
-                    <label for="customer-name">Nama Lengkap *</label>
-                    <input type="text" id="customer-name" name="customer_name" required>
+                    <div class="selected-location" id="selected-location">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="selected-location-text">Lokasi terpilih</span>
+                        <input type="hidden" id="selected-subdistrict" value="">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="customer-phone">Nomor Telepon *</label>
-                    <input type="tel" id="customer-phone" name="customer_phone" required>
+                <!-- Shipping Cost -->
+                <div class="form-group shipping-cost-box">
+                    <label style="font-weight: bold;">Ongkos Kirim</label>
+                    <div class="cost-amount" id="shipping-cost-display">Rp 0</div>
+                    <div class="cost-service" id="shipping-service"></div>
+                    <div class="cost-error" id="shipping-error">
+                        <i class="fas fa-exclamation-circle"></i> Gagal menghitung ongkir
+                    </div>
                 </div>
 
+                <!-- Payment Section -->
+                <h3><i class="fas fa-credit-card"></i> Metode Pembayaran</h3>
                 <div class="form-group">
-                    <label for="customer-address">Alamat Lengkap *</label>
-                    <textarea id="customer-address" name="customer_address" required></textarea>
+                    <div class="payment-methods">
+                        <label class="payment-method active" id="qris-method">
+                            <input type="radio" name="payment_method" value="QRIS" checked>
+                            <i class="fas fa-qrcode" style="color:#25a3d6;"></i>
+                            <span class="method-name">QRIS</span>
+                        </label>
+                        <label class="payment-method" id="transfer-method">
+                            <input type="radio" name="payment_method" value="TRANSFER">
+                            <i class="fas fa-university" style="color:#28a745;"></i>
+                            <span class="method-name">Transfer BSI</span>
+                        </label>
+                    </div>
                 </div>
 
-                <!-- Shipping -->
-                <h3>Pengiriman</h3>
-                <!-- Di bagian shipping form -->
-<div class="form-group">
-    <label for="province-select">Provinsi</label>
-    <select id="province-select" onchange="loadCities(this.value)">
-        <option value="">Pilih Provinsi</option>
-    </select>
-</div>
-
-<div class="form-group">
-    <label for="city-select">Kota/Kabupaten</label>
-    <select id="city-select" onchange="loadSubdistricts(this.value)" disabled>
-        <option value="">Pilih Kota</option>
-    </select>
-</div>
-
-<div class="form-group">
-    <label for="district-select">Kecamatan (untuk ongkir akurat)</label>
-    <select id="district-select" onchange="calculateShipping()" disabled>
-        <option value="">Pilih Kecamatan</option>
-    </select>
-    <small>Pilih kecamatan untuk perhitungan ongkir yang lebih akurat</small>
-</div>
-
-                <div class="form-group">
-                    <label>Ongkos Kirim</label>
-                    <div id="shipping-cost-display">Rp 0</div>
-                    <input type="hidden" id="shipping-cost" name="shipping_cost">
-                    <small id="shipping-service"></small>
-                </div>
-
-                <!-- Payment -->
-                <h3>Metode Pembayaran</h3>
-                <div class="form-group">
-                    <label>
-                        <input type="radio" name="payment_method" value="QRIS" checked>
-                        QRIS
-                    </label>
-                    <label>
-                        <input type="radio" name="payment_method" value="TRANSFER">
-                        Transfer BSI
-                    </label>
-                </div>
-
-                <div id="qris-payment" class="payment-info">
+                <div id="qris-payment" class="payment-info-box">
                     <p>Scan QRIS berikut untuk pembayaran:</p>
-                    <img src="images/qris.jpg" alt="QRIS Babeh Fried Chicken" style="max-width: 200px;">
+                    <img src="images/qris.jpg" alt="QRIS Babeh Fried Chicken">
+                    <p style="margin-top:10px; color:#6c757d; font-size:0.9rem;">
+                        Total: <strong id="payment-total">Rp 0</strong>
+                    </p>
                 </div>
 
-                <div id="transfer-payment" class="payment-info" style="display:none;">
+                <div id="transfer-payment" class="payment-info-box" style="display:none;">
                     <p>Transfer ke rekening BSI:</p>
-                    <p><strong>BSI: 1234567890</strong></p>
+                    <div class="bank-details">
+                        <strong>BSI: 1234567890</strong>
+                    </div>
                     <p>a.n. Babeh Fried Chicken</p>
+                    <p style="color:#6c757d; font-size:0.9rem;">
+                        Total: <strong id="payment-total-transfer">Rp 0</strong>
+                    </p>
                 </div>
 
                 <div class="form-group">
-                    <label for="order-notes">Catatan</label>
+                    <label for="order-notes">Catatan (Opsional)</label>
                     <textarea id="order-notes" name="notes" placeholder="Catatan tambahan untuk pesanan..."></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:15px; font-size:1.1rem;">
                     <i class="fas fa-check"></i> Pesan Sekarang
                 </button>
             </form>
         </div>
     </section>
 
-    <!-- About Section -->
+    <!-- ===== ABOUT SECTION ===== -->
     <section id="tentang-kami" class="section">
         <h2 class="section-title">Tentang <span>Kami</span></h2>
         <div id="about-content"></div>
     </section>
 
-    <!-- Footer -->
-    <footer style="background: #333; color: white; padding: 2rem 0; margin-top: 3rem;">
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; text-align: center;">
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div style="max-width:1200px; margin:0 auto; padding:0 20px;">
             <p>&copy; 2024 Babeh Fried Chicken. All rights reserved.</p>
-            <p style="margin-top: 10px;">
-                <a href="https://wa.me/6282121266056" style="color: #25d366; text-decoration: none;">
+            <p style="margin-top:10px;">
+                <a href="https://wa.me/6282121266056" target="_blank">
                     <i class="fab fa-whatsapp"></i> 082121266056
                 </a>
             </p>
         </div>
     </footer>
 
-    <!-- Chat Widget -->
+    <!-- ===== CHAT WIDGET ===== -->
     <div class="chat-widget">
         <button class="chat-toggle" onclick="toggleChat()">
             <i class="fab fa-whatsapp"></i>
@@ -738,26 +1233,18 @@
                 <p>Halo! Ada yang bisa kami bantu?</p>
             </div>
             <div class="quick-messages">
-                <button class="quick-message" data-message="Halo, saya mau order ayam.">
-                    Mau order
-                </button>
-                <button class="quick-message" data-message="Saya mau tanya menu.">
-                    Tanya menu
-                </button>
-                <button class="quick-message" data-message="Saya mau tanya harga.">
-                    Tanya harga
-                </button>
+                <button class="quick-message" data-message="Halo, saya mau order ayam.">Mau order</button>
+                <button class="quick-message" data-message="Saya mau tanya menu.">Tanya menu</button>
+                <button class="quick-message" data-message="Saya mau tanya harga.">Tanya harga</button>
             </div>
             <form id="chat-form" class="chat-input">
                 <input type="text" id="chat-message" placeholder="Ketik pesan..." required>
-                <button type="submit" style="background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px;">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+                <button type="submit"><i class="fas fa-paper-plane"></i></button>
             </form>
         </div>
     </div>
 
-    <!-- Load scripts -->
+    <!-- ===== SCRIPTS ===== -->
     <script src="js/supabase-config.js"></script>
     <script src="js/produk-harga.js"></script>
     <script src="js/tentang-kami.js"></script>
@@ -765,22 +1252,64 @@
     <script src="js/chat-admin.js"></script>
 
     <script>
-        // Toggle chat
+        // ============================================
+        // GLOBAL FUNCTIONS
+        // ============================================
+
+        // Toggle Chat
         function toggleChat() {
             document.getElementById('chat-box').classList.toggle('active');
         }
 
         // Update order badge on page load
         document.addEventListener('DOMContentLoaded', function() {
-            window.updateOrderBadge();
-        });
-
-        // Initialize shipping costs on order page load
-        document.addEventListener('DOMContentLoaded', function() {
-            if (document.getElementById('province-select')) {
-                loadShippingCosts();
+            if (typeof window.updateOrderBadge === 'function') {
+                window.updateOrderBadge();
             }
         });
+
+        // Payment method toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const qrisMethod = document.getElementById('qris-method');
+            const transferMethod = document.getElementById('transfer-method');
+            const qrisPayment = document.getElementById('qris-payment');
+            const transferPayment = document.getElementById('transfer-payment');
+
+            if (qrisMethod && transferMethod) {
+                qrisMethod.addEventListener('click', function() {
+                    this.classList.add('active');
+                    transferMethod.classList.remove('active');
+                    qrisPayment.style.display = 'block';
+                    transferPayment.style.display = 'none';
+                });
+
+                transferMethod.addEventListener('click', function() {
+                    this.classList.add('active');
+                    qrisMethod.classList.remove('active');
+                    qrisPayment.style.display = 'none';
+                    transferPayment.style.display = 'block';
+                });
+            }
+        });
+
+        // Update payment total when shipping changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const shippingCost = document.getElementById('shipping-cost');
+            const orderTotal = document.getElementById('order-total');
+            const paymentTotal = document.getElementById('payment-total');
+            const paymentTotalTransfer = document.getElementById('payment-total-transfer');
+
+            if (shippingCost) {
+                const observer = new MutationObserver(function() {
+                    const total = orderTotal ? orderTotal.textContent : 'Rp 0';
+                    if (paymentTotal) paymentTotal.textContent = total;
+                    if (paymentTotalTransfer) paymentTotalTransfer.textContent = total;
+                });
+                observer.observe(shippingCost, { attributes: true, attributeFilter: ['value'] });
+            }
+        });
+
+        console.log('🍗 Babeh Fried Chicken loaded successfully!');
     </script>
 </body>
 </html>
