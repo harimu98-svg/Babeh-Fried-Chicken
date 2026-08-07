@@ -1,4 +1,9 @@
-// netlify/functions/rajaongkir.js - VERSI DENGAN SEARCH-BASED APPROACH
+// netlify/functions/rajaongkir.js
+// Menggunakan Step-by-Step Method dengan caching data
+
+let cachedLocationData = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 jam
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -18,102 +23,32 @@ exports.handler = async function(event, context) {
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
-                error: 'RAJA_ONGKIR_API_KEY not configured' 
-            })
+            body: JSON.stringify({ error: 'RAJA_ONGKIR_API_KEY not configured' })
         };
     }
 
     try {
-        const { path, queryStringParameters, body, httpMethod } = event;
+        const { path, queryStringParameters, httpMethod } = event;
         
-        console.log('📌 Request path:', path);
-        console.log('📌 Query params:', queryStringParameters);
-
         // ============================================
-        // 1. SEARCH DOMESTIC DESTINATION (UNIVERSAL)
-        // ============================================
-        // GET /search?q=jakarta&limit=100
-        if (path.includes('/search') && httpMethod === 'GET') {
-            const search = queryStringParameters?.q || queryStringParameters?.search || '';
-            const limit = queryStringParameters?.limit || 100;
-            const offset = queryStringParameters?.offset || 0;
-            
-            // Jika search kosong, ambil semua data dengan limit besar
-            const searchQuery = search || 'a'; // 'a' sebagai minimal search
-            
-            console.log(`🔄 Searching: "${searchQuery}" with limit ${limit}`);
-            
-            const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(searchQuery)}&limit=${limit}&offset=${offset}`,
-                { headers: { 'key': API_KEY } }
-            );
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return {
-                    statusCode: response.status,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'RajaOngkir API error',
-                        status: response.status,
-                        details: errorText
-                    })
-                };
-            }
-            
-            const data = await response.json();
-            console.log(`✅ Search results: ${data.data?.length || 0} items`);
-            
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(data)
-            };
-        }
-
-        // ============================================
-        // 2. GET PROVINCES (DARI SEARCH RESULTS)
+        // 1. GET PROVINCES (dari data ter-cache)
         // ============================================
         if (path.includes('/provinces') && httpMethod === 'GET') {
-            console.log('🔄 Fetching provinces from search...');
+            const data = await getLocationData(API_KEY, BASE_URL);
             
-            // Ambil semua data dengan search 'a'
-            const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?search=a&limit=500&offset=0`,
-                { headers: { 'key': API_KEY } }
-            );
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return {
-                    statusCode: response.status,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'RajaOngkir API error',
-                        status: response.status,
-                        details: errorText
-                    })
-                };
-            }
-            
-            const data = await response.json();
-            
-            // Extract unique provinces
+            // Ekstrak provinsi unik
             const provinceMap = new Map();
-            if (data.data && Array.isArray(data.data)) {
-                data.data.forEach(item => {
-                    if (!provinceMap.has(item.province_id)) {
-                        provinceMap.set(item.province_id, {
-                            province_id: item.province_id,
-                            province: item.province
-                        });
-                    }
-                });
-            }
+            data.data.forEach(item => {
+                if (!provinceMap.has(item.province_id)) {
+                    provinceMap.set(item.province_id, {
+                        province_id: item.province_id,
+                        province: item.province
+                    });
+                }
+            });
             
             const provinces = Array.from(provinceMap.values());
-            console.log(`✅ ${provinces.length} unique provinces found`);
+            console.log(`✅ ${provinces.length} provinces loaded`);
             
             return {
                 statusCode: 200,
@@ -128,62 +63,36 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 3. GET CITIES BY PROVINCE
+        // 2. GET CITIES (dari data ter-cache)
         // ============================================
         if (path.includes('/cities') && httpMethod === 'GET') {
-            const provinceId = queryStringParameters?.province_id || queryStringParameters?.province;
+            const provinceId = queryStringParameters?.province_id;
             
             if (!provinceId) {
                 return {
                     statusCode: 400,
                     headers,
-                    body: JSON.stringify({ 
-                        error: 'Province ID is required' 
-                    })
+                    body: JSON.stringify({ error: 'Province ID is required' })
                 };
             }
             
-            console.log(`🔄 Fetching cities for province: ${provinceId}`);
+            const data = await getLocationData(API_KEY, BASE_URL);
             
-            // Ambil semua data lalu filter
-            const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?search=a&limit=500&offset=0`,
-                { headers: { 'key': API_KEY } }
-            );
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return {
-                    statusCode: response.status,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'RajaOngkir API error',
-                        status: response.status,
-                        details: errorText
-                    })
-                };
-            }
-            
-            const data = await response.json();
-            
-            // Filter dan extract unique cities
+            // Filter dan ekstrak kota unik
             const cityMap = new Map();
-            if (data.data && Array.isArray(data.data)) {
-                data.data.forEach(item => {
-                    if (item.province_id == provinceId && !cityMap.has(item.city_id)) {
-                        cityMap.set(item.city_id, {
-                            city_id: item.city_id,
-                            city_name: item.city_name,
-                            type: item.type,
-                            province_id: item.province_id,
-                            province: item.province
-                        });
-                    }
-                });
-            }
+            data.data.forEach(item => {
+                if (item.province_id == provinceId && !cityMap.has(item.city_id)) {
+                    cityMap.set(item.city_id, {
+                        city_id: item.city_id,
+                        city_name: item.city_name,
+                        type: item.type,
+                        province_id: item.province_id
+                    });
+                }
+            });
             
             const cities = Array.from(cityMap.values());
-            console.log(`✅ ${cities.length} cities found for province ${provinceId}`);
+            console.log(`✅ ${cities.length} cities loaded for province ${provinceId}`);
             
             return {
                 statusCode: 200,
@@ -198,62 +107,37 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 4. GET SUBDISTRICTS BY CITY
+        // 3. GET SUBDISTRICTS (dari data ter-cache)
         // ============================================
         if (path.includes('/subdistricts') && httpMethod === 'GET') {
-            const cityId = queryStringParameters?.city_id || queryStringParameters?.city;
+            const cityId = queryStringParameters?.city_id;
             
             if (!cityId) {
                 return {
                     statusCode: 400,
                     headers,
-                    body: JSON.stringify({ 
-                        error: 'City ID is required' 
-                    })
+                    body: JSON.stringify({ error: 'City ID is required' })
                 };
             }
             
-            console.log(`🔄 Fetching subdistricts for city: ${cityId}`);
+            const data = await getLocationData(API_KEY, BASE_URL);
             
-            // Ambil semua data lalu filter
-            const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?search=a&limit=500&offset=0`,
-                { headers: { 'key': API_KEY } }
-            );
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return {
-                    statusCode: response.status,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'RajaOngkir API error',
-                        status: response.status,
-                        details: errorText
-                    })
-                };
-            }
-            
-            const data = await response.json();
-            
-            // Filter subdistricts by city_id
+            // Filter subdistricts
             const subdistricts = [];
-            if (data.data && Array.isArray(data.data)) {
-                data.data.forEach(item => {
-                    if (item.city_id == cityId) {
-                        subdistricts.push({
-                            subdistrict_id: item.subdistrict_id,
-                            subdistrict_name: item.subdistrict_name,
-                            city_id: item.city_id,
-                            city_name: item.city_name,
-                            province_id: item.province_id,
-                            province: item.province
-                        });
-                    }
-                });
-            }
+            data.data.forEach(item => {
+                if (item.city_id == cityId) {
+                    subdistricts.push({
+                        subdistrict_id: item.subdistrict_id,
+                        subdistrict_name: item.subdistrict_name,
+                        city_id: item.city_id,
+                        city_name: item.city_name,
+                        province_id: item.province_id,
+                        province: item.province
+                    });
+                }
+            });
             
-            console.log(`✅ ${subdistricts.length} subdistricts found for city ${cityId}`);
+            console.log(`✅ ${subdistricts.length} subdistricts loaded for city ${cityId}`);
             
             return {
                 statusCode: 200,
@@ -268,10 +152,10 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 5. CALCULATE DOMESTIC COST
+        // 4. CALCULATE DOMESTIC COST
         // ============================================
         if (path.includes('/cost') && httpMethod === 'POST') {
-            const data = JSON.parse(body);
+            const data = JSON.parse(event.body);
             
             console.log(`🔄 Calculating domestic cost...`);
             console.log('📌 Origin:', data.origin);
@@ -279,12 +163,13 @@ exports.handler = async function(event, context) {
             console.log('📌 Weight:', data.weight);
             console.log('📌 Courier:', data.courier);
             
+            // Validasi: pastikan origin dan destination adalah subdistrict_id
             if (!data.origin || !data.destination || !data.weight || !data.courier) {
                 return {
                     statusCode: 400,
                     headers,
                     body: JSON.stringify({ 
-                        error: 'Missing required fields' 
+                        error: 'Missing required fields: origin, destination, weight, courier' 
                     })
                 };
             }
@@ -329,10 +214,7 @@ exports.handler = async function(event, context) {
         return {
             statusCode: 404,
             headers,
-            body: JSON.stringify({ 
-                error: 'Endpoint not found',
-                path: path 
-            })
+            body: JSON.stringify({ error: 'Endpoint not found', path })
         };
 
     } catch (error) {
@@ -347,3 +229,49 @@ exports.handler = async function(event, context) {
         };
     }
 };
+
+// ============================================
+// FUNGSI UNTUK MENDAPATKAN DATA LOKASI
+// ============================================
+async function getLocationData(API_KEY, BASE_URL) {
+    // Cek cache
+    if (cachedLocationData && cacheTimestamp && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+        console.log('✅ Using cached location data');
+        return cachedLocationData;
+    }
+    
+    console.log('🔄 Fetching fresh location data...');
+    
+    try {
+        // Ambil semua data dengan search parameter kosong
+        const response = await fetch(
+            `${BASE_URL}/destination/domestic-destination?search=&limit=999&offset=0`,
+            { headers: { 'key': API_KEY } }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.meta && data.meta.code === 200 && data.data) {
+            cachedLocationData = data;
+            cacheTimestamp = Date.now();
+            console.log(`✅ Location data cached: ${data.data.length} items`);
+            return data;
+        } else {
+            throw new Error('Invalid response format from RajaOngkir');
+        }
+    } catch (error) {
+        console.error('❌ Error fetching location data:', error);
+        
+        // Jika cache ada, gunakan meskipun expired
+        if (cachedLocationData) {
+            console.log('⚠️ Using expired cache as fallback');
+            return cachedLocationData;
+        }
+        
+        throw error;
+    }
+}
