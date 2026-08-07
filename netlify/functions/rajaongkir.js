@@ -1,33 +1,25 @@
-// netlify/functions/rajaongkir.js - VERSI DENGAN ENDPOINT YANG BENAR
+// netlify/functions/rajaongkir.js - VERSI DENGAN SEARCH-BASED APPROACH
 
 exports.handler = async function(event, context) {
-    // CORS Headers
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
     };
 
-    // Handle preflight
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: ''
-        };
+        return { statusCode: 200, headers, body: '' };
     }
 
     const API_KEY = process.env.RAJA_ONGKIR_API_KEY;
     const BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
-    // Validasi API Key
     if (!API_KEY) {
-        console.error('RAJA_ONGKIR_API_KEY not configured');
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
-                error: 'RAJA_ONGKIR_API_KEY not configured in environment variables' 
+                error: 'RAJA_ONGKIR_API_KEY not configured' 
             })
         };
     }
@@ -37,31 +29,23 @@ exports.handler = async function(event, context) {
         
         console.log('📌 Request path:', path);
         console.log('📌 Query params:', queryStringParameters);
-        console.log('📌 Method:', httpMethod);
 
         // ============================================
-        // 1. SEARCH DOMESTIC DESTINATION
+        // 1. SEARCH DOMESTIC DESTINATION (UNIVERSAL)
         // ============================================
-        // GET /destination/domestic-destination?search=jakarta&limit=10&offset=0
+        // GET /search?q=jakarta&limit=100
         if (path.includes('/search') && httpMethod === 'GET') {
             const search = queryStringParameters?.q || queryStringParameters?.search || '';
-            const limit = queryStringParameters?.limit || 10;
+            const limit = queryStringParameters?.limit || 100;
             const offset = queryStringParameters?.offset || 0;
             
-            if (!search || search.length < 3) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'Search query minimal 3 karakter' 
-                    })
-                };
-            }
+            // Jika search kosong, ambil semua data dengan limit besar
+            const searchQuery = search || 'a'; // 'a' sebagai minimal search
             
-            console.log(`🔄 Searching domestic destination: ${search}`);
+            console.log(`🔄 Searching: "${searchQuery}" with limit ${limit}`);
             
             const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(search)}&limit=${limit}&offset=${offset}`,
+                `${BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(searchQuery)}&limit=${limit}&offset=${offset}`,
                 { headers: { 'key': API_KEY } }
             );
             
@@ -79,7 +63,7 @@ exports.handler = async function(event, context) {
             }
             
             const data = await response.json();
-            console.log(`✅ Search results: ${data.data?.length || 0} results`);
+            console.log(`✅ Search results: ${data.data?.length || 0} items`);
             
             return {
                 statusCode: 200,
@@ -89,16 +73,14 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 2. GET PROVINCES (Untuk Dropdown)
+        // 2. GET PROVINCES (DARI SEARCH RESULTS)
         // ============================================
-        // GET /destination/domestic-destination?search=&limit=100
-        // Ini sebenarnya bisa pakai search dengan empty query
         if (path.includes('/provinces') && httpMethod === 'GET') {
-            console.log('🔄 Fetching all provinces...');
+            console.log('🔄 Fetching provinces from search...');
             
-            // Ambil semua provinsi dengan limit besar
+            // Ambil semua data dengan search 'a'
             const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?limit=100&offset=0`,
+                `${BASE_URL}/destination/domestic-destination?search=a&limit=500&offset=0`,
                 { headers: { 'key': API_KEY } }
             );
             
@@ -117,10 +99,8 @@ exports.handler = async function(event, context) {
             
             const data = await response.json();
             
-            // Extract unique provinces from results
-            const provinces = [];
+            // Extract unique provinces
             const provinceMap = new Map();
-            
             if (data.data && Array.isArray(data.data)) {
                 data.data.forEach(item => {
                     if (!provinceMap.has(item.province_id)) {
@@ -128,15 +108,12 @@ exports.handler = async function(event, context) {
                             province_id: item.province_id,
                             province: item.province
                         });
-                        provinces.push({
-                            province_id: item.province_id,
-                            province: item.province
-                        });
                     }
                 });
             }
             
-            console.log(`✅ ${provinces.length} provinces found`);
+            const provinces = Array.from(provinceMap.values());
+            console.log(`✅ ${provinces.length} unique provinces found`);
             
             return {
                 statusCode: 200,
@@ -151,9 +128,8 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 3. GET CITIES BY PROVINCE (Untuk Dropdown)
+        // 3. GET CITIES BY PROVINCE
         // ============================================
-        // GET /destination/domestic-destination?search=&province_id=1&limit=100
         if (path.includes('/cities') && httpMethod === 'GET') {
             const provinceId = queryStringParameters?.province_id || queryStringParameters?.province;
             
@@ -169,9 +145,9 @@ exports.handler = async function(event, context) {
             
             console.log(`🔄 Fetching cities for province: ${provinceId}`);
             
-            // Filter by province_id
+            // Ambil semua data lalu filter
             const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?limit=500&offset=0`,
+                `${BASE_URL}/destination/domestic-destination?search=a&limit=500&offset=0`,
                 { headers: { 'key': API_KEY } }
             );
             
@@ -190,24 +166,23 @@ exports.handler = async function(event, context) {
             
             const data = await response.json();
             
-            // Filter cities by province_id
-            const cities = [];
+            // Filter dan extract unique cities
+            const cityMap = new Map();
             if (data.data && Array.isArray(data.data)) {
                 data.data.forEach(item => {
-                    if (item.province_id == provinceId) {
-                        cities.push({
+                    if (item.province_id == provinceId && !cityMap.has(item.city_id)) {
+                        cityMap.set(item.city_id, {
                             city_id: item.city_id,
                             city_name: item.city_name,
                             type: item.type,
                             province_id: item.province_id,
-                            province: item.province,
-                            subdistrict_id: item.subdistrict_id,
-                            subdistrict_name: item.subdistrict_name
+                            province: item.province
                         });
                     }
                 });
             }
             
+            const cities = Array.from(cityMap.values());
             console.log(`✅ ${cities.length} cities found for province ${provinceId}`);
             
             return {
@@ -223,9 +198,8 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 4. GET SUBDISTRICTS BY CITY (Untuk Dropdown)
+        // 4. GET SUBDISTRICTS BY CITY
         // ============================================
-        // GET /destination/domestic-destination?search=&city_id=1&limit=100
         if (path.includes('/subdistricts') && httpMethod === 'GET') {
             const cityId = queryStringParameters?.city_id || queryStringParameters?.city;
             
@@ -241,9 +215,9 @@ exports.handler = async function(event, context) {
             
             console.log(`🔄 Fetching subdistricts for city: ${cityId}`);
             
-            // Filter by city_id
+            // Ambil semua data lalu filter
             const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?limit=500&offset=0`,
+                `${BASE_URL}/destination/domestic-destination?search=a&limit=500&offset=0`,
                 { headers: { 'key': API_KEY } }
             );
             
@@ -294,25 +268,23 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 5. CALCULATE DOMESTIC SHIPPING COST
+        // 5. CALCULATE DOMESTIC COST
         // ============================================
-        // POST /calculate/domestic-cost
         if (path.includes('/cost') && httpMethod === 'POST') {
             const data = JSON.parse(body);
             
-            console.log(`🔄 Calculating domestic shipping cost...`);
+            console.log(`🔄 Calculating domestic cost...`);
             console.log('📌 Origin:', data.origin);
             console.log('📌 Destination:', data.destination);
             console.log('📌 Weight:', data.weight);
             console.log('📌 Courier:', data.courier);
             
-            // Validasi input
             if (!data.origin || !data.destination || !data.weight || !data.courier) {
                 return {
                     statusCode: 400,
                     headers,
                     body: JSON.stringify({ 
-                        error: 'Missing required fields: origin, destination, weight, courier' 
+                        error: 'Missing required fields' 
                     })
                 };
             }
@@ -333,8 +305,6 @@ exports.handler = async function(event, context) {
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ Error response:', errorText);
-                
                 return {
                     statusCode: response.status,
                     headers,
@@ -347,103 +317,12 @@ exports.handler = async function(event, context) {
             }
             
             const result = await response.json();
-            console.log('✅ Shipping cost calculated successfully');
+            console.log('✅ Cost calculated successfully');
             
             return {
                 statusCode: 200,
                 headers,
                 body: JSON.stringify(result)
-            };
-        }
-
-        // ============================================
-        // 6. TRACKING AWB (Waybill)
-        // ============================================
-        // POST /track/waybill
-        if (path.includes('/waybill') && httpMethod === 'POST') {
-            const data = JSON.parse(body);
-            
-            console.log(`🔄 Tracking AWB: ${data.waybill}`);
-            
-            if (!data.waybill || !data.courier) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'Missing required fields: waybill, courier' 
-                    })
-                };
-            }
-            
-            const response = await fetch(`${BASE_URL}/track/waybill`, {
-                method: 'POST',
-                headers: {
-                    'key': API_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    waybill: data.waybill,
-                    courier: data.courier
-                })
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return {
-                    statusCode: response.status,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'RajaOngkir API error',
-                        status: response.status,
-                        details: errorText
-                    })
-                };
-            }
-            
-            const result = await response.json();
-            console.log('✅ Waybill tracked successfully');
-            
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(result)
-            };
-        }
-
-        // ============================================
-        // 7. SEARCH INTERNATIONAL DESTINATION
-        // ============================================
-        // GET /destination/international-destination?search=singapore
-        if (path.includes('/international') && httpMethod === 'GET') {
-            const search = queryStringParameters?.q || queryStringParameters?.search || '';
-            
-            console.log(`🔄 Searching international destination: ${search}`);
-            
-            const response = await fetch(
-                `${BASE_URL}/destination/international-destination?search=${encodeURIComponent(search)}`,
-                { headers: { 'key': API_KEY } }
-            );
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                return {
-                    statusCode: response.status,
-                    headers,
-                    body: JSON.stringify({ 
-                        error: 'RajaOngkir API error',
-                        status: response.status,
-                        details: errorText
-                    })
-                };
-            }
-            
-            const data = await response.json();
-            console.log(`✅ International search results: ${data.data?.length || 0}`);
-            
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(data)
             };
         }
 
@@ -458,15 +337,12 @@ exports.handler = async function(event, context) {
 
     } catch (error) {
         console.error('❌ Function error:', error);
-        console.error('❌ Error stack:', error.stack);
-        
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
                 error: 'Internal server error',
-                message: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                message: error.message 
             })
         };
     }
