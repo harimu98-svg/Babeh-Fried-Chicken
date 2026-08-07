@@ -1,6 +1,4 @@
-// js/order.js - FULL VERSION
-
-// ===== KONFIGURASI =====
+// js/order.js
 const API_BASE_URL = '/.netlify/functions/rajaongkir';
 const ORIGIN_SUBDISTRICT_ID = '26017'; // CURUG, DEPOK
 const ORIGIN_NAME = 'Curug, Depok, Jawa Barat';
@@ -91,6 +89,8 @@ function updateHiddenFields(order) {
 // ============================================
 window.addToOrder = function(productId, productName, price, weight) {
     const itemWeight = weight || 250;
+    console.log('➕ Adding:', { productId, productName, price, weight: itemWeight });
+    
     let order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
     
     const existingItem = order.items.find(item => item.id === productId);
@@ -165,7 +165,13 @@ async function searchDestination(query) {
             resultsContainer.classList.add('show');
             
             const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=20`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
             const data = await response.json();
+            console.log('📦 Search response:', data);
             
             let results = [];
             if (data.data && Array.isArray(data.data)) {
@@ -194,7 +200,7 @@ async function searchDestination(query) {
                 resultsContainer.classList.add('show');
             }
         } catch (error) {
-            console.error('Search error:', error);
+            console.error('❌ Search error:', error);
             resultsContainer.innerHTML = `<div class="search-no-results" style="color:#dc3545;">❌ Gagal mencari</div>`;
             resultsContainer.classList.add('show');
         }
@@ -254,31 +260,42 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
         formData.append('courier', courier);
         formData.append('price', 'lowest');
         
+        console.log('📤 Cost request:', formData.toString());
+        
         const response = await fetch(`${API_BASE_URL}/cost`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData.toString()
         });
         
-        const data = await response.json();
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
         
+        const data = await response.json();
+        console.log('📦 Full response:', JSON.stringify(data, null, 2));
+        
+        if (data.error) {
+            throw new Error(data.error + (data.details ? `: ${data.details}` : ''));
+        }
+        
+        // Parse response - data adalah array langsung
         let costs = [];
-        if (data.data?.results) {
-            data.data.results.forEach(courierResult => {
-                if (courierResult.costs) {
-                    courierResult.costs.forEach(cost => {
-                        costs.push({
-                            courier: courierResult.code,
-                            courier_name: courierResult.name,
-                            service: cost.service,
-                            description: cost.description,
-                            price: cost.cost?.[0]?.value || 0,
-                            etd: cost.cost?.[0]?.etd || '1-2'
-                        });
-                    });
-                }
+        if (data.data && Array.isArray(data.data)) {
+            data.data.forEach(item => {
+                costs.push({
+                    courier: item.code || 'unknown',
+                    courier_name: item.name || item.code || 'Kurir',
+                    service: item.service || 'Layanan',
+                    description: item.description || '',
+                    price: item.cost || 0,
+                    etd: item.etd || '1-2'
+                });
             });
         }
+        
+        console.log('📊 Parsed costs:', costs);
         
         if (costs.length > 0) {
             displayShippingOptions(costs);
@@ -288,17 +305,26 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
             if (shippingCost) shippingCost.value = cheapest.price;
             if (costDisplay) costDisplay.textContent = `Rp ${formatRupiah(cheapest.price)}`;
             if (serviceDisplay) {
-                serviceDisplay.textContent = `${cheapest.courier_name} - ${cheapest.service} (${cheapest.etd} hari)`;
+                serviceDisplay.textContent = `${cheapest.courier_name} - ${cheapest.service} (${cheapest.etd})`;
                 serviceDisplay.style.color = '#28a745';
             }
             if (loader) loader.style.display = 'none';
             updateTotal();
+            showNotification(`✅ Ongkir: Rp ${formatRupiah(cheapest.price)}`, 'success');
         } else {
             throw new Error('Tidak ada pilihan ongkir');
         }
     } catch (error) {
-        console.error('Error:', error);
-        resetShippingDisplay();
+        console.error('❌ Cost error:', error);
+        if (costDisplay) costDisplay.textContent = 'Rp 0';
+        if (serviceDisplay) {
+            serviceDisplay.textContent = `⚠️ ${error.message}`;
+            serviceDisplay.style.color = '#dc3545';
+        }
+        if (loader) loader.style.display = 'none';
+        if (optionsContainer) {
+            optionsContainer.innerHTML = `<div style="color:#dc3545;">❌ ${error.message}</div>`;
+        }
         showNotification('Gagal menghitung ongkir', 'error');
     }
 }
@@ -333,15 +359,16 @@ function displayShippingOptions(costs) {
         ${sorted.map((cost, index) => {
             const isCheapest = index === 0;
             return `
-                <div class="option-item ${isCheapest ? 'cheapest' : ''}">
+                <div class="option-item ${isCheapest ? 'cheapest' : ''}" style="display:flex; justify-content:space-between; padding:8px 5px; border-bottom:1px solid #f0f0f0; ${isCheapest ? 'background:#f8f9fa; border-radius:4px;' : ''}">
                     <span>
                         ${isCheapest ? '🏆 ' : ''}
                         <strong>${cost.courier_name}</strong>
                         <span style="color:#6c757d; font-size:0.85rem;">${cost.service}</span>
+                        ${cost.description ? `<span style="color:#6c757d; font-size:0.8rem; display:block;">${cost.description}</span>` : ''}
                     </span>
                     <span style="font-weight:bold; color:${isCheapest ? '#28a745' : '#333'};">
                         Rp ${formatRupiah(cost.price)}
-                        <span style="font-size:0.75rem; color:#6c757d; font-weight:normal;">(${cost.etd} hari)</span>
+                        <span style="font-size:0.75rem; color:#6c757d; font-weight:normal;">(${cost.etd})</span>
                         ${isCheapest ? ' ✅' : ''}
                     </span>
                 </div>
@@ -431,9 +458,6 @@ async function submitOrder(event) {
     }
 }
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
 function generateOrderNumber() {
     const date = new Date();
     const timestamp = date.getFullYear() + 
@@ -482,6 +506,9 @@ function showSuccessPage(orderNumber) {
     `;
 }
 
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
 function formatRupiah(amount) {
     return new Intl.NumberFormat('id-ID').format(amount);
 }
@@ -524,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Close search results on click outside
+    // Close search results
     document.addEventListener('click', function(e) {
         const results = document.getElementById('search-results');
         const input = document.getElementById('search-destination');
@@ -563,3 +590,4 @@ window.selectSearchResult = selectSearchResult;
 window.calculateShippingWithSubdistrict = calculateShippingWithSubdistrict;
 window.submitOrder = submitOrder;
 window.updateOrderBadge = updateOrderBadge;
+window.addToOrder = addToOrder;
