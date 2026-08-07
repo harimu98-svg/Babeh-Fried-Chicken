@@ -42,6 +42,7 @@ function displayProducts(products) {
         `;
         
         items.forEach(product => {
+            const berat = product.berat || 250;
             html += `
                 <div class="product-card">
                     ${product.gambar_url ? `<img src="${product.gambar_url}" alt="${product.nama_produk}" class="product-image">` : 
@@ -50,10 +51,8 @@ function displayProducts(products) {
                         <h3 class="product-name">${product.nama_produk}</h3>
                         <p class="product-description">${product.deskripsi || ''}</p>
                         <div class="product-price">Rp ${formatRupiah(product.harga)}</div>
-                        <div style="font-size:0.8rem; color:#6c757d; margin-bottom:10px;">
-                            <i class="fas fa-weight"></i> ${product.berat || 250}g
-                        </div>
-                        <button class="btn-order" onclick="addToOrder(${product.id}, '${product.nama_produk}', ${product.harga}, ${product.berat || 250})">
+                        <div class="product-weight"><i class="fas fa-weight"></i> ${berat}g</div>
+                        <button class="btn-order" onclick="window.addToOrder(${product.id}, '${product.nama_produk}', ${product.harga}, ${berat})">
                             <i class="fas fa-plus"></i> Pesan
                         </button>
                     </div>
@@ -72,52 +71,4 @@ function displayProducts(products) {
 
 function formatRupiah(amount) {
     return new Intl.NumberFormat('id-ID').format(amount);
-}
-
-// ============================================
-// ADD TO ORDER - DENGAN BERAT
-// ============================================
-window.addToOrder = function(productId, productName, price, weight) {
-    let order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
-    
-    const existingItem = order.items.find(item => item.id === productId);
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        order.items.push({
-            id: productId,
-            name: productName,
-            price: price,
-            weight: weight || 250,
-            quantity: 1
-        });
-    }
-
-    // Update total dan berat
-    order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    order.total_berat = order.items.reduce((sum, item) => sum + (item.weight * item.quantity), 0);
-    
-    localStorage.setItem('currentOrder', JSON.stringify(order));
-    window.updateOrderBadge();
-    window.loadOrderItems();
-    
-    showNotification(`✅ ${productName} ditambahkan ke pesanan!`, 'success');
-};
-
-window.updateOrderBadge = function() {
-    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
-    const badge = document.getElementById('order-badge');
-    if (badge) {
-        const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
-        badge.textContent = totalItems;
-        badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
-    }
-};
-
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = message;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
 }
