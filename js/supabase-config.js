@@ -6,7 +6,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Raja Ongkir API Key (free version)
-const RAJA_ONGKIR_API_KEY = 'YOUR_RAJA_ONGKIR_API_KEY';
+const RAJA_ONGKIR_API_KEY = 'EyVnuJDKdd1199a9611c75bf8MUX42Zc';
 const RAJA_ONGKIR_BASE_URL = 'https://api.rajaongkir.com/starter';
 
 // WA Admin
