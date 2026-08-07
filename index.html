@@ -178,11 +178,11 @@
             .nav-menu a { font-size: 0.75rem; }
             .section-title { font-size: 1.8rem; }
         }
-  /* ===== HEADER ===== */
+ /* ===== HEADER ===== */
 .header {
     background: linear-gradient(135deg, #dc3545, #c82333);
     color: white;
-    padding: 1rem 0;
+    padding: 0.8rem 0;
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -196,37 +196,39 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* 🔥 Mencegah menu turun ke bawah */
     gap: 15px;
 }
 
-/* ===== LOGO ===== */
+/* ===== LOGO SECTION (KIRI) ===== */
+.logo-section {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0; /* 🔥 Mencegah logo mengecil */
+}
+
 .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     cursor: pointer;
     text-decoration: none;
     transition: transform 0.3s;
 }
 
 .logo:hover {
-    transform: scale(1.05);
-}
-
-.logo-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
+    transform: scale(1.03);
 }
 
 /* ===== LOGO IMAGE (BULAT) ===== */
 .logo-image {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    border: 3px solid #ffd700;
-    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.4);
+    border: 2px solid #ffd700;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
     background: white;
 }
 
@@ -238,44 +240,125 @@
 }
 
 /* ===== LOGO TEXT ===== */
-.logo-text {
-    color: white;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-align: center;
-    letter-spacing: 0.5px;
+.logo-text-wrapper {
+    display: flex;
+    flex-direction: column;
     line-height: 1.2;
 }
 
-.logo-text span {
+.logo-text {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.logo-subtext {
+    color: white; /* 🔥 PUTIH! */
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
+/* ===== NAV MENU (KANAN) ===== */
+.nav-menu {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-shrink: 0; /* 🔥 Mencegah menu mengecil */
+}
+
+.nav-menu a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.3s;
+    white-space: nowrap; /* 🔥 Mencegah teks menu turun */
+}
+
+.nav-menu a:hover {
     color: #ffd700;
+}
+
+/* ===== CART ===== */
+.order-cart {
+    position: relative;
+}
+
+.order-cart i {
+    font-size: 1.4rem;
+}
+
+.order-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ffd700;
+    color: #333;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    display: none;
 }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
+    .header-content {
+        flex-wrap: wrap; /* Izinkan wrap di tablet */
+        gap: 10px;
+    }
+    
     .logo-image {
-        width: 45px;
-        height: 45px;
+        width: 40px;
+        height: 40px;
     }
     
     .logo-text {
-        font-size: 0.75rem;
+        font-size: 0.95rem;
+    }
+    
+    .logo-subtext {
+        font-size: 0.65rem;
+    }
+    
+    .nav-menu {
+        gap: 1rem;
+    }
+    
+    .nav-menu a {
+        font-size: 0.8rem;
     }
 }
 
 @media (max-width: 480px) {
+    .header-content {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
     .logo-image {
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
         border-width: 2px;
     }
     
     .logo-text {
-        font-size: 0.65rem;
+        font-size: 0.8rem;
     }
     
-    .logo-text span {
-        display: block; /* "Fried Chicken" pindah ke baris baru di mobile */
+    .logo-subtext {
+        font-size: 0.55rem;
+    }
+    
+    .nav-menu {
+        gap: 0.7rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .nav-menu a {
+        font-size: 0.7rem;
     }
 }
     </style>
@@ -285,18 +368,20 @@
 <!-- ===== HEADER ===== -->
 <header class="header">
     <div class="header-content">
-        <!-- Logo -->
-        <div class="logo" onclick="window.location.href='#'">
-            <div class="logo-wrapper">
+        <!-- Logo (kiri) -->
+        <div class="logo-section">
+            <div class="logo" onclick="window.location.href='#'">
                 <div class="logo-image">
                     <img src="images/logo.jpg" alt="Babeh Fried Chicken">
                 </div>
-                <span class="logo-text">
-                    Babeh <span>Fried Chicken</span>
-                </span>
+                <div class="logo-text-wrapper">
+                    <span class="logo-text">Babeh</span>
+                    <span class="logo-subtext">Fried Chicken</span>
+                </div>
             </div>
         </div>
         
+        <!-- Menu (kanan) -->
         <nav class="nav-menu">
             <a href="#home">Home</a>
             <a href="#produk">Menu</a>
