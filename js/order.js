@@ -1,7 +1,4 @@
-// js/order.js - VERSI FINAL
-
-// ===== KONFIGURASI =====
-const API_BASE_URL = '/.netlify/functions/rajaongkir';
+// js/order.js - FIX untuk response structure
 
 // ===== LOAD PROVINCES =====
 async function loadShippingCosts() {
@@ -11,17 +8,30 @@ async function loadShippingCosts() {
         
         console.log('Province data:', data);
         
-        // Cek apakah ada error dari function
-        if (data.error) {
-            throw new Error(data.error);
-        }
+        // ✅ CEK STRUKTUR RESPONSE YANG BENAR
+        // Netlify Function mengembalikan { meta: {...}, data: [...] }
+        // BUKAN { rajaongkir: { status: {...}, results: [...] } }
         
-        if (data.rajaongkir && data.rajaongkir.status.code === 200) {
+        if (data.data && Array.isArray(data.data)) {
             const select = document.getElementById('province-select');
             if (!select) {
                 console.error('Element province-select not found');
                 return;
             }
+            
+            select.innerHTML = '<option value="">Pilih Provinsi</option>';
+            data.data.forEach(province => {
+                const option = document.createElement('option');
+                option.value = province.province_id;
+                option.textContent = province.province;
+                select.appendChild(option);
+            });
+            
+            console.log('✅ Provinces loaded successfully');
+        } else if (data.rajaongkir && data.rajaongkir.status && data.rajaongkir.status.code === 200) {
+            // Fallback: jika response dalam format RajaOngkir asli
+            const select = document.getElementById('province-select');
+            if (!select) return;
             
             select.innerHTML = '<option value="">Pilih Provinsi</option>';
             data.rajaongkir.results.forEach(province => {
@@ -30,8 +40,10 @@ async function loadShippingCosts() {
                 option.textContent = province.province;
                 select.appendChild(option);
             });
+        } else if (data.error) {
+            throw new Error(data.error);
         } else {
-            throw new Error('Gagal load provinsi');
+            throw new Error('Format response tidak dikenali');
         }
     } catch (error) {
         console.error('Error loading provinces:', error);
@@ -56,11 +68,19 @@ async function loadCities(provinceId) {
         
         console.log('City data:', data);
         
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        if (data.rajaongkir && data.rajaongkir.status.code === 200) {
+        // ✅ CEK STRUKTUR RESPONSE
+        if (data.data && Array.isArray(data.data)) {
+            const select = document.getElementById('city-select');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Pilih Kota</option>';
+            data.data.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.city_id;
+                option.textContent = `${city.type} ${city.city_name}`;
+                select.appendChild(option);
+            });
+        } else if (data.rajaongkir && data.rajaongkir.status && data.rajaongkir.status.code === 200) {
             const select = document.getElementById('city-select');
             if (!select) return;
             
@@ -71,6 +91,10 @@ async function loadCities(provinceId) {
                 option.textContent = `${city.type} ${city.city_name}`;
                 select.appendChild(option);
             });
+        } else if (data.error) {
+            throw new Error(data.error);
+        } else {
+            throw new Error('Format response tidak dikenali');
         }
     } catch (error) {
         console.error('Error loading cities:', error);
@@ -92,11 +116,19 @@ async function loadDistricts(cityId) {
         
         console.log('District data:', data);
         
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        if (data.rajaongkir && data.rajaongkir.status.code === 200) {
+        // ✅ CEK STRUKTUR RESPONSE
+        if (data.data && Array.isArray(data.data)) {
+            const select = document.getElementById('district-select');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Pilih Kecamatan</option>';
+            data.data.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district.district_id;
+                option.textContent = district.district_name;
+                select.appendChild(option);
+            });
+        } else if (data.rajaongkir && data.rajaongkir.status && data.rajaongkir.status.code === 200) {
             const select = document.getElementById('district-select');
             if (!select) return;
             
@@ -107,6 +139,10 @@ async function loadDistricts(cityId) {
                 option.textContent = district.district_name;
                 select.appendChild(option);
             });
+        } else if (data.error) {
+            throw new Error(data.error);
+        } else {
+            throw new Error('Format response tidak dikenali');
         }
     } catch (error) {
         console.error('Error loading districts:', error);
@@ -147,11 +183,26 @@ async function calculateShipping() {
         
         console.log('Cost data:', data);
         
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        if (data.rajaongkir && data.rajaongkir.status.code === 200) {
+        // ✅ CEK STRUKTUR RESPONSE
+        if (data.data && data.data.length > 0) {
+            const costs = data.data[0].costs;
+            if (costs && costs.length > 0) {
+                const cheapest = costs.reduce((min, cost) => {
+                    const price = cost.cost[0].value;
+                    return price < min.cost[0].value ? cost : min;
+                });
+                
+                const shippingCost = document.getElementById('shipping-cost');
+                if (shippingCost) shippingCost.value = cheapest.cost[0].value;
+                
+                const shippingService = document.getElementById('shipping-service');
+                if (shippingService) {
+                    shippingService.textContent = 
+                        `${cheapest.service} - ${cheapest.description} (${cheapest.cost[0].etd} hari)`;
+                }
+                updateTotal();
+            }
+        } else if (data.rajaongkir && data.rajaongkir.status && data.rajaongkir.status.code === 200) {
             const costs = data.rajaongkir.results[0].costs;
             if (costs && costs.length > 0) {
                 const cheapest = costs.reduce((min, cost) => {
@@ -169,8 +220,10 @@ async function calculateShipping() {
                 }
                 updateTotal();
             }
+        } else if (data.error) {
+            throw new Error(data.error);
         } else {
-            throw new Error('Gagal hitung ongkir');
+            throw new Error('Format response tidak dikenali');
         }
     } catch (error) {
         console.error('Error calculating shipping:', error);
@@ -179,105 +232,3 @@ async function calculateShipping() {
         showNotification('Gagal menghitung ongkir', 'error');
     }
 }
-
-// ===== UPDATE TOTAL =====
-function updateTotal() {
-    const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
-    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
-    const total = subtotal + shipping;
-    const grandTotal = document.getElementById('grand-total');
-    if (grandTotal) grandTotal.textContent = formatRupiah(total);
-}
-
-// ===== FORMAT RUPIAH =====
-function formatRupiah(amount) {
-    return new Intl.NumberFormat('id-ID').format(amount);
-}
-
-// ===== SHOW NOTIFICATION =====
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = message;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
-}
-
-// ===== FALLBACK: STATIC PROVINCES =====
-function loadStaticProvinces() {
-    const staticProvinces = [
-        { id: '1', name: 'Aceh' },
-        { id: '2', name: 'Sumatera Utara' },
-        { id: '3', name: 'Sumatera Barat' },
-        { id: '4', name: 'Riau' },
-        { id: '5', name: 'Kepulauan Riau' },
-        { id: '6', name: 'Jambi' },
-        { id: '7', name: 'Bengkulu' },
-        { id: '8', name: 'Sumatera Selatan' },
-        { id: '9', name: 'Kepulauan Bangka Belitung' },
-        { id: '10', name: 'Lampung' },
-        { id: '11', name: 'DKI Jakarta' },
-        { id: '12', name: 'Jawa Barat' },
-        { id: '13', name: 'Banten' },
-        { id: '14', name: 'Jawa Tengah' },
-        { id: '15', name: 'DI Yogyakarta' },
-        { id: '16', name: 'Jawa Timur' },
-        { id: '17', name: 'Bali' },
-        { id: '18', name: 'Nusa Tenggara Barat' },
-        { id: '19', name: 'Nusa Tenggara Timur' },
-        { id: '20', name: 'Kalimantan Barat' },
-        { id: '21', name: 'Kalimantan Tengah' },
-        { id: '22', name: 'Kalimantan Selatan' },
-        { id: '23', name: 'Kalimantan Timur' },
-        { id: '24', name: 'Kalimantan Utara' },
-        { id: '25', name: 'Sulawesi Utara' },
-        { id: '26', name: 'Gorontalo' },
-        { id: '27', name: 'Sulawesi Tengah' },
-        { id: '28', name: 'Sulawesi Selatan' },
-        { id: '29', name: 'Sulawesi Tenggara' },
-        { id: '30', name: 'Sulawesi Barat' },
-        { id: '31', name: 'Maluku' },
-        { id: '32', name: 'Maluku Utara' },
-        { id: '33', name: 'Papua' },
-        { id: '34', name: 'Papua Barat' }
-    ];
-
-    const select = document.getElementById('province-select');
-    if (!select) return;
-    
-    select.innerHTML = '<option value="">Pilih Provinsi</option>';
-    staticProvinces.forEach(province => {
-        const option = document.createElement('option');
-        option.value = province.id;
-        option.textContent = province.name;
-        select.appendChild(option);
-    });
-}
-
-// ===== INISIALISASI =====
-document.addEventListener('DOMContentLoaded', function() {
-    // Load provinces
-    loadShippingCosts();
-    
-    // Event listeners dengan null check
-    const provinceSelect = document.getElementById('province-select');
-    if (provinceSelect) {
-        provinceSelect.addEventListener('change', function() {
-            loadCities(this.value);
-        });
-    }
-    
-    const citySelect = document.getElementById('city-select');
-    if (citySelect) {
-        citySelect.addEventListener('change', function() {
-            loadDistricts(this.value);
-        });
-    }
-    
-    const districtSelect = document.getElementById('district-select');
-    if (districtSelect) {
-        districtSelect.addEventListener('change', function() {
-            calculateShipping();
-        });
-    }
-});
