@@ -1,4 +1,4 @@
-// js/order.js - PERBAIKI ERROR NULL
+// js/order.js - PERBAIKI DENGAN DEBUG
 
 // ===== KONFIGURASI =====
 const API_BASE_URL = '/.netlify/functions/rajaongkir';
@@ -24,13 +24,15 @@ function setOrigin() {
 }
 
 // ============================================
-// LOAD ORDER ITEMS
+// LOAD ORDER ITEMS - DENGAN DEFAULT BERAT
 // ============================================
 function loadOrderItems() {
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
     const container = document.getElementById('order-items');
     const totalContainer = document.getElementById('order-total');
     const beratContainer = document.getElementById('order-berat');
+
+    console.log('📦 Order data:', order);
 
     if (!container) {
         console.warn('⚠️ order-items element not found');
@@ -52,13 +54,15 @@ function loadOrderItems() {
 
     let html = '';
     order.items.forEach(item => {
+        // Pastikan berat ada, jika null gunakan default 250g
+        const weight = item.weight || 250;
         html += `
             <div class="order-item">
                 <div class="item-info">
                     <span class="item-name">${item.name}</span>
                     <span class="item-price">Rp ${formatRupiah(item.price)} x ${item.quantity}</span>
                     <span style="font-size:0.8rem; color:#6c757d; display:block;">
-                        <i class="fas fa-weight"></i> ${item.weight}g
+                        <i class="fas fa-weight"></i> ${weight}g
                     </span>
                 </div>
                 <div class="item-controls">
@@ -73,56 +77,63 @@ function loadOrderItems() {
 
     container.innerHTML = html;
     if (totalContainer) totalContainer.textContent = `Rp ${formatRupiah(order.total)}`;
-    if (beratContainer) beratContainer.textContent = `${order.total_berat} g`;
+    if (beratContainer) beratContainer.textContent = `${order.total_berat || 0} g`;
 
-    // Update hidden fields - dengan null check
+    // Update hidden fields
     const itemsJson = document.getElementById('order-items-json');
     const subtotal = document.getElementById('subtotal');
     const totalBerat = document.getElementById('total-berat');
     
     if (itemsJson) itemsJson.value = JSON.stringify(order.items);
     if (subtotal) subtotal.value = order.total;
-    if (totalBerat) totalBerat.value = order.total_berat;
+    if (totalBerat) totalBerat.value = order.total_berat || 0;
 }
 
 // ============================================
-// UPDATE QUANTITY
+// ADD TO ORDER - PASTIKAN BERAT TERSIMPAN
 // ============================================
-function updateQuantity(productId, change) {
-    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
-    const item = order.items.find(i => i.id === productId);
+window.addToOrder = function(productId, productName, price, weight) {
+    // Jika berat null/undefined, gunakan default 250
+    const itemWeight = weight || 250;
     
-    if (item) {
-        item.quantity += change;
-        if (item.quantity <= 0) {
-            order.items = order.items.filter(i => i.id !== productId);
-        }
-        order.total = order.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        order.total_berat = order.items.reduce((sum, i) => sum + (i.weight * i.quantity), 0);
-        localStorage.setItem('currentOrder', JSON.stringify(order));
-        loadOrderItems();
-        window.updateOrderBadge();
+    console.log('➕ Adding to order:', { productId, productName, price, weight: itemWeight });
+    
+    let order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
+    
+    const existingItem = order.items.find(item => item.id === productId);
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        order.items.push({
+            id: productId,
+            name: productName,
+            price: price,
+            weight: itemWeight,
+            quantity: 1
+        });
     }
-}
 
-function removeItem(productId) {
-    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
-    order.items = order.items.filter(i => i.id !== productId);
-    order.total = order.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-    order.total_berat = order.items.reduce((sum, i) => sum + (i.weight * i.quantity), 0);
+    // Update total dan berat
+    order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    order.total_berat = order.items.reduce((sum, item) => sum + ((item.weight || 250) * item.quantity), 0);
+    
     localStorage.setItem('currentOrder', JSON.stringify(order));
-    loadOrderItems();
     window.updateOrderBadge();
-}
+    loadOrderItems();
+    
+    showNotification(`✅ ${productName} ditambahkan ke pesanan!`, 'success');
+};
 
 // ============================================
-// SEARCH DESTINATION
+// SEARCH DESTINATION - DENGAN DEBUG
 // ============================================
 async function searchDestination(query) {
     const resultsContainer = document.getElementById('search-results');
     
+    console.log('🔍 Search triggered:', { query, resultsContainer: !!resultsContainer });
+    
     if (!resultsContainer) {
-        console.warn('⚠️ search-results element not found');
+        console.error('❌ search-results element NOT FOUND! Check HTML ID.');
         return;
     }
     
@@ -140,6 +151,8 @@ async function searchDestination(query) {
             
             const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=20`);
             const data = await response.json();
+            
+            console.log('📦 Search response:', data);
             
             let results = [];
             if (data.data && Array.isArray(data.data)) {
@@ -180,6 +193,8 @@ async function searchDestination(query) {
 // SELECT SEARCH RESULT
 // ============================================
 function selectSearchResult(id, name, city, province) {
+    console.log('📍 Selected location:', { id, name, city, province });
+    
     if (!id) {
         showNotification('❌ ID lokasi tidak ditemukan!', 'error');
         return;
@@ -216,7 +231,10 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
     const courier = courierSelect ? courierSelect.value : 'jne';
 
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total_berat": 0}');
+    // Pastikan total_berat tidak null
     const totalWeight = order.total_berat || 1000;
+
+    console.log('📦 Calculating shipping:', { subdistrictId, courier, totalWeight });
 
     const costDisplay = document.getElementById('shipping-cost-display');
     const serviceDisplay = document.getElementById('shipping-service');
@@ -236,6 +254,8 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
         formData.append('courier', courier);
         formData.append('price', 'lowest');
         
+        console.log('📤 Request:', formData.toString());
+        
         const response = await fetch(`${API_BASE_URL}/cost`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -243,6 +263,7 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
         });
         
         const data = await response.json();
+        console.log('📥 Response:', data);
         
         let costs = [];
         if (data.data?.results) {
@@ -285,6 +306,26 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
     }
 }
 
+// ============================================
+// UPDATE TOTAL
+// ============================================
+function updateTotal() {
+    const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
+    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
+    const total = subtotal + shipping;
+    
+    const orderTotal = document.getElementById('order-total');
+    if (orderTotal) orderTotal.textContent = `Rp ${formatRupiah(total)}`;
+    
+    const paymentTotal = document.getElementById('payment-total');
+    if (paymentTotal) paymentTotal.textContent = `Rp ${formatRupiah(total)}`;
+    
+    console.log('💰 Total updated:', { subtotal, shipping, total });
+}
+
+// ============================================
+// RESET SHIPPING DISPLAY
+// ============================================
 function resetShippingDisplay() {
     const shippingCost = document.getElementById('shipping-cost');
     const costDisplay = document.getElementById('shipping-cost-display');
@@ -302,6 +343,9 @@ function resetShippingDisplay() {
     if (optionsContainer) optionsContainer.innerHTML = '';
 }
 
+// ============================================
+// DISPLAY SHIPPING OPTIONS
+// ============================================
 function displayShippingOptions(costs) {
     const container = document.getElementById('shipping-options');
     if (!container) return;
@@ -372,13 +416,15 @@ async function submitOrder(event) {
         subtotal: order.total,
         shipping_cost: shippingCost,
         total: order.total + shippingCost,
-        total_berat: order.total_berat,
+        total_berat: order.total_berat || 0,
         shipping_subdistrict: subdistrictId,
         payment_method: paymentMethod,
         payment_status: 'Menunggu Verifikasi pembayaran',
         notes: notes || '',
         status: 'pending'
     };
+
+    console.log('📦 Order data:', orderData);
 
     try {
         const { data, error } = await window.supabaseClient
@@ -398,6 +444,9 @@ async function submitOrder(event) {
     }
 }
 
+// ============================================
+// GENERATE ORDER NUMBER
+// ============================================
 function generateOrderNumber() {
     const date = new Date();
     const timestamp = date.getFullYear() + 
@@ -410,6 +459,9 @@ function generateOrderNumber() {
     return `BFC${timestamp}${random}`;
 }
 
+// ============================================
+// SEND WA NOTIFICATION
+// ============================================
 function sendWAOrderNotification(orderData) {
     const message = `*Pesanan Baru Babeh Fried Chicken!*%0A%0A` +
         `No. Pesanan: ${orderData.order_number}%0A` +
@@ -418,9 +470,9 @@ function sendWAOrderNotification(orderData) {
         `Alamat: ${orderData.customer_address}%0A%0A` +
         `*Detail Pesanan:*%0A` +
         orderData.items.map(item => 
-            `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)} (${item.weight}g)`
+            `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)} (${item.weight || 250}g)`
         ).join('%0A') +
-        `%0A%0ABerat Total: ${orderData.total_berat}g%0A` +
+        `%0A%0ABerat Total: ${orderData.total_berat || 0}g%0A` +
         `Subtotal: Rp ${formatRupiah(orderData.subtotal)}%0A` +
         `Ongkir: Rp ${formatRupiah(orderData.shipping_cost)}%0A` +
         `*Total: Rp ${formatRupiah(orderData.total)}*%0A%0A` +
@@ -429,6 +481,9 @@ function sendWAOrderNotification(orderData) {
     window.open(`https://wa.me/6282121266056?text=${message}`, '_blank');
 }
 
+// ============================================
+// SHOW SUCCESS PAGE
+// ============================================
 function showSuccessPage(orderNumber) {
     const container = document.getElementById('order-form-container');
     if (!container) return;
@@ -454,18 +509,6 @@ function formatRupiah(amount) {
     return new Intl.NumberFormat('id-ID').format(amount);
 }
 
-function updateTotal() {
-    const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
-    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
-    const total = subtotal + shipping;
-    
-    const orderTotal = document.getElementById('order-total');
-    if (orderTotal) orderTotal.textContent = `Rp ${formatRupiah(total)}`;
-    
-    const paymentTotal = document.getElementById('payment-total');
-    if (paymentTotal) paymentTotal.textContent = `Rp ${formatRupiah(total)}`;
-}
-
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -488,6 +531,11 @@ function toggleShippingMethod() {
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔄 Initializing order page...');
+    console.log('🔍 Checking elements:');
+    console.log('  - search-destination:', document.getElementById('search-destination'));
+    console.log('  - search-results:', document.getElementById('search-results'));
+    console.log('  - selected-location:', document.getElementById('selected-location'));
+    console.log('  - selected-subdistrict:', document.getElementById('selected-subdistrict'));
     
     setOrigin();
     loadOrderItems();
@@ -502,11 +550,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Search input
     const searchInput = document.getElementById('search-destination');
     if (searchInput) {
+        console.log('✅ Search input found, attaching event listener');
         searchInput.addEventListener('input', function(e) {
-            searchDestination(e.target.value.trim());
+            const query = e.target.value.trim();
+            console.log('📝 Input event:', query);
+            searchDestination(query);
         });
     } else {
-        console.warn('⚠️ search-destination element not found');
+        console.error('❌ search-destination element NOT FOUND!');
     }
     
     // Close results on click outside
@@ -541,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================
-// GLOBAL FUNCTIONS UNTUK HTML
+// GLOBAL FUNCTIONS
 // ============================================
 window.loadOrderItems = loadOrderItems;
 window.updateQuantity = updateQuantity;
@@ -550,6 +601,7 @@ window.selectSearchResult = selectSearchResult;
 window.toggleShippingMethod = toggleShippingMethod;
 window.calculateShippingWithSubdistrict = calculateShippingWithSubdistrict;
 window.submitOrder = submitOrder;
+
 window.updateOrderBadge = function() {
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
     const badge = document.getElementById('order-badge');
