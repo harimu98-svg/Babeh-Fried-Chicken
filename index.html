@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babeh Fried Chicken - Ayam Goreng Spesial</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .logo span {
+            color: #ffd700;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-menu a:hover {
+            color: #ffd700;
+        }
+
+        .order-cart {
+            position: relative;
+        }
+
+        .order-cart i {
+            font-size: 1.5rem;
+        }
+
+        .order-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ffd700;
+            color: #333;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('images/hero-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #ffd700;
+            color: #333;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-primary {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #c82333;
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Sections */
+        .section {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #dc3545;
+        }
+
+        .section-title span {
+            color: #ffd700;
+        }
+
+        /* Products */
+        .category-section {
+            margin-bottom: 3rem;
+        }
+
+        .category-title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 1.5rem;
+            border-bottom: 3px solid #ffd700;
+            padding-bottom: 0.5rem;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .product-image-placeholder {
+            width: 100%;
+            height: 200px;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #ccc;
+        }
+
+        .product-info {
+            padding: 1.5rem;
+        }
+
+        .product-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .product-price {
+            font-size: 1.3rem;
+            color: #dc3545;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .btn-order {
+            width: 100%;
+            padding: 10px;
+            background: #ffd700;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-order:hover {
+            background: #f0c000;
+        }
+
+        /* Order Form */
+        .order-form-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .order-items {
+            margin: 1.5rem 0;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qty-btn {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .qty-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* Chat Widget */
+        .chat-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999;
+        }
+
+        .chat-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #25d366;
+            color: white;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 3px 15px rgba(37, 211, 102, 0.4);
+            transition: transform 0.3s;
+        }
+
+        .chat-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-box {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+            display: none;
+            overflow: hidden;
+        }
+
+        .chat-box.active {
+            display: block;
+        }
+
+        .chat-header {
+            background: #25d366;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-messages {
+            max-height: 300px;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .chat-input {
+            padding: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+        }
+
+        .quick-messages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 0 1rem 1rem;
+        }
+
+        .quick-message {
+            padding: 5px 10px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .quick-message:hover {
+            background: #e0e0e0;
+        }
+
+        /* About Page */
+        .about-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .about-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .about-divider {
+            width: 100px;
+            height: 3px;
+            background: #ffd700;
+            margin: 1rem auto;
+        }
+
+        .about-section {
+            margin-bottom: 2rem;
+        }
+
+        .about-section h2 {
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+
+        .about-section h2 i {
+            margin-right: 10px;
+        }
+
+        .vision-mission {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .advantages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .advantage-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .advantage-item i {
+            font-size: 2.5rem;
+            color: #dc3545;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-info {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .contact-info p {
+            font-size: 1.1rem;
+        }
+
+        .contact-info a {
+            color: #dc3545;
+            text-decoration: none;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .notification.info {
+            background: #17a2b8;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                gap: 1rem;
+            }
+            
+            .nav-menu a {
+                font-size: 0.9rem;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            
+            .vision-mission {
+                grid-template-columns: 1fr;
+            }
+            
+            .chat-box {
+                width: 300px;
+                right: -20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.2rem;
+            }
+            
+            .nav-menu a {
+                font-size: 0.8rem;
+            }
+            
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo" onclick="window.location.href='#'">
+                Babeh <span>Fried Chicken</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#home">Home</a>
+                <a href="#produk">Menu</a>
+                <a href="#order">Pesan</a>
+                <a href="#tentang-kami">Tentang</a>
+                <a href="#order" class="order-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="order-badge" id="order-badge">0</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <h1>Babeh Fried Chicken</h1>
+        <p>Rasa Ayam Goreng yang Bikin Nagih!</p>
+        <a href="#order" class="btn">Pesan Sekarang</a>
+    </section>
+
+    <!-- Products Section -->
+    <section id="produk" class="section">
+        <h2 class="section-title">Menu <span>Spesial</span></h2>
+        <div id="products-container"></div>
+    </section>
+
+    <!-- Order Section -->
+    <section id="order" class="section">
+        <h2 class="section-title">Pesan <span>Sekarang</span></h2>
+        <div id="order-form-container" class="order-form-container">
+            <form id="order-form">
+                <!-- Order Summary -->
+                <div class="order-summary">
+                    <h3>Pesanan Anda</h3>
+                    <div id="order-items" class="order-items"></div>
+                    <div class="order-total">
+                        <strong>Total: </strong>
+                        <span id="order-total">Rp 0</span>
+                    </div>
+                </div>
+
+                <!-- Hidden fields for order data -->
+                <input type="hidden" id="order-items-json" name="items">
+                <input type="hidden" id="subtotal" name="subtotal">
+
+                <!-- Customer Info -->
+                <h3>Data Pemesan</h3>
+                <div class="form-group">
+                    <label for="customer-name">Nama Lengkap *</label>
+                    <input type="text" id="customer-name" name="customer_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="customer-phone">Nomor Telepon *</label>
+                    <input type="tel" id="customer-phone" name="customer_phone" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="customer-address">Alamat Lengkap *</label>
+                    <textarea id="customer-address" name="customer_address" required></textarea>
+                </div>
+
+                <!-- Shipping -->
+                <h3>Pengiriman</h3>
+                <div class="form-group">
+                    <label for="province-select">Provinsi</label>
+                    <select id="province-select">
+                        <option value="">Pilih Provinsi</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="city-select">Kota/Kabupaten</label>
+                    <select id="city-select">
+                        <option value="">Pilih Kota</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ongkos Kirim</label>
+                    <div id="shipping-cost-display">Rp 0</div>
+                    <input type="hidden" id="shipping-cost" name="shipping_cost">
+                    <small id="shipping-service"></small>
+                </div>
+
+                <!-- Payment -->
+                <h3>Metode Pembayaran</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="radio" name="payment_method" value="QRIS" checked>
+                        QRIS
+                    </label>
+                    <label>
+                        <input type="radio" name="payment_method" value="TRANSFER">
+                        Transfer BSI
+                    </label>
+                </div>
+
+                <div id="qris-payment" class="payment-info">
+                    <p>Scan QRIS berikut untuk pembayaran:</p>
+                    <img src="images/qris.jpg" alt="QRIS Babeh Fried Chicken" style="max-width: 200px;">
+                </div>
+
+                <div id="transfer-payment" class="payment-info" style="display:none;">
+                    <p>Transfer ke rekening BSI:</p>
+                    <p><strong>BSI: 1234567890</strong></p>
+                    <p>a.n. Babeh Fried Chicken</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="order-notes">Catatan</label>
+                    <textarea id="order-notes" name="notes" placeholder="Catatan tambahan untuk pesanan..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-check"></i> Pesan Sekarang
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="tentang-kami" class="section">
+        <h2 class="section-title">Tentang <span>Kami</span></h2>
+        <div id="about-content"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="background: #333; color: white; padding: 2rem 0; margin-top: 3rem;">
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; text-align: center;">
+            <p>&copy; 2024 Babeh Fried Chicken. All rights reserved.</p>
+            <p style="margin-top: 10px;">
+                <a href="https://wa.me/6282121266056" style="color: #25d366; text-decoration: none;">
+                    <i class="fab fa-whatsapp"></i> 082121266056
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget">
+        <button class="chat-toggle" onclick="toggleChat()">
+            <i class="fab fa-whatsapp"></i>
+        </button>
+        <div class="chat-box" id="chat-box">
+            <div class="chat-header">
+                <i class="fab fa-whatsapp"></i>
+                <strong>Chat Admin</strong>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <p>Halo! Ada yang bisa kami bantu?</p>
+            </div>
+            <div class="quick-messages">
+                <button class="quick-message" data-message="Halo, saya mau order ayam.">
+                    Mau order
+                </button>
+                <button class="quick-message" data-message="Saya mau tanya menu.">
+                    Tanya menu
+                </button>
+                <button class="quick-message" data-message="Saya mau tanya harga.">
+                    Tanya harga
+                </button>
+            </div>
+            <form id="chat-form" class="chat-input">
+                <input type="text" id="chat-message" placeholder="Ketik pesan..." required>
+                <button type="submit" style="background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px;">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Load scripts -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/produk-harga.js"></script>
+    <script src="js/tentang-kami.js"></script>
+    <script src="js/order.js"></script>
+    <script src="js/chat-admin.js"></script>
+
+    <script>
+        // Toggle chat
+        function toggleChat() {
+            document.getElementById('chat-box').classList.toggle('active');
+        }
+
+        // Update order badge on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            window.updateOrderBadge();
+        });
+
+        // Initialize shipping costs on order page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('province-select')) {
+                loadShippingCosts();
+            }
+        });
+    </script>
+</body>
+</html>
