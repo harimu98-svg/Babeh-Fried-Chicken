@@ -1,5 +1,6 @@
 // netlify/functions/rajaongkir.js
-const axios = require('axios');
+// 🚨 JANGAN PAKAI require('axios') di Netlify Functions v2!
+// Gunakan fetch bawaan Node.js 18+
 
 exports.handler = async function(event, context) {
     // CORS Headers
@@ -22,69 +23,86 @@ exports.handler = async function(event, context) {
     const API_KEY = process.env.RAJA_ONGKIR_API_KEY;
     const BASE_URL = 'https://rajaongkir.komerce.id/api/v1';
 
+    // Validasi API Key
+    if (!API_KEY) {
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ 
+                error: 'RAJA_ONGKIR_API_KEY not configured in environment variables' 
+            })
+        };
+    }
+
     try {
         const { path, queryStringParameters, body } = event;
 
         // ===== GET PROVINCES =====
         if (path.includes('/province') && event.httpMethod === 'GET') {
-            const response = await axios.get(`${BASE_URL}/destination/province`, {
+            const response = await fetch(`${BASE_URL}/destination/province`, {
                 headers: { 'key': API_KEY }
             });
+            const data = await response.json();
             
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(response.data)
+                body: JSON.stringify(data)
             };
         }
 
         // ===== GET CITIES =====
         if (path.includes('/city') && event.httpMethod === 'GET') {
             const province = queryStringParameters?.province || '';
-            const response = await axios.get(`${BASE_URL}/destination/city?province=${province}`, {
+            const response = await fetch(`${BASE_URL}/destination/city?province=${province}`, {
                 headers: { 'key': API_KEY }
             });
+            const data = await response.json();
             
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(response.data)
+                body: JSON.stringify(data)
             };
         }
 
         // ===== GET DISTRICTS =====
         if (path.includes('/district') && event.httpMethod === 'GET') {
             const city = queryStringParameters?.city || '';
-            const response = await axios.get(`${BASE_URL}/destination/district?city=${city}`, {
+            const response = await fetch(`${BASE_URL}/destination/district?city=${city}`, {
                 headers: { 'key': API_KEY }
             });
+            const data = await response.json();
             
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(response.data)
+                body: JSON.stringify(data)
             };
         }
 
         // ===== CALCULATE SHIPPING COST =====
         if (path.includes('/cost') && event.httpMethod === 'POST') {
             const data = JSON.parse(body);
-            const response = await axios.post(`${BASE_URL}/cost`, {
-                origin: data.origin,
-                destination: data.destination,
-                weight: data.weight,
-                courier: data.courier
-            }, {
+            const response = await fetch(`${BASE_URL}/cost`, {
+                method: 'POST',
                 headers: {
                     'key': API_KEY,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    origin: data.origin,
+                    destination: data.destination,
+                    weight: data.weight,
+                    courier: data.courier
+                })
             });
+            const result = await response.json();
             
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify(response.data)
+                body: JSON.stringify(result)
             };
         }
 
