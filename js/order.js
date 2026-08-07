@@ -18,7 +18,7 @@ function setOrigin() {
 }
 
 // ============================================
-// LOAD ORDER ITEMS - AMBIL BERAT DARI PRODUK
+// LOAD ORDER ITEMS
 // ============================================
 function loadOrderItems() {
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
@@ -393,25 +393,41 @@ function updateTotal() {
 }
 
 // ============================================
-// SUBMIT ORDER
+// SUBMIT ORDER - SESUAI STRUKTUR TABEL
 // ============================================
 async function submitOrder(event) {
     event.preventDefault();
     
+    console.log('📝 Starting order submission...');
+    
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
+    console.log('📦 Order from localStorage:', order);
+    
     if (order.items.length === 0) {
         showNotification('Silakan tambahkan pesanan terlebih dahulu!', 'error');
         return;
     }
 
+    // Ambil data dari form
     const customerName = document.getElementById('customer-name')?.value?.trim();
     const customerPhone = document.getElementById('customer-phone')?.value?.trim();
     const customerAddress = document.getElementById('customer-address')?.value?.trim();
-    const notes = document.getElementById('order-notes')?.value?.trim();
+    const notes = document.getElementById('order-notes')?.value?.trim() || '';
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'QRIS';
     const subdistrictId = document.getElementById('selected-subdistrict')?.value;
     const shippingCost = parseInt(document.getElementById('shipping-cost')?.value) || 0;
 
+    console.log('📝 Form data:', { 
+        customerName, 
+        customerPhone, 
+        customerAddress, 
+        notes, 
+        paymentMethod, 
+        subdistrictId, 
+        shippingCost 
+    });
+
+    // Validasi
     if (!customerName || !customerPhone || !customerAddress) {
         showNotification('Mohon lengkapi data pemesan!', 'error');
         return;
@@ -423,22 +439,28 @@ async function submitOrder(event) {
     }
 
     const orderNumber = generateOrderNumber();
+    
+    // 🔥 SESUAIKAN dengan struktur tabel yang ada
     const orderData = {
         order_number: orderNumber,
         customer_name: customerName,
         customer_phone: customerPhone,
         customer_address: customerAddress,
-        items: order.items,
+        items: order.items, // JSONB
         subtotal: order.total,
         shipping_cost: shippingCost,
         total: order.total + shippingCost,
         total_berat: order.total_berat || 0,
-        shipping_subdistrict: subdistrictId,
+        shipping_subdistrict: subdistrictId, // 🔥 Kolom ini sudah ditambahkan di SQL
         payment_method: paymentMethod,
         payment_status: 'Menunggu Verifikasi pembayaran',
         notes: notes || '',
         status: 'pending'
+        // created_at otomatis diisi oleh Supabase
+        // updated_at otomatis diisi oleh Supabase
     };
+
+    console.log('📤 Final order data:', orderData);
 
     try {
         const { data, error } = await window.supabaseClient
@@ -446,18 +468,41 @@ async function submitOrder(event) {
             .insert([orderData])
             .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Supabase Error:', error);
+            console.error('❌ Error details:', error.details);
+            console.error('❌ Error hint:', error.hint);
+            console.error('❌ Error message:', error.message);
+            
+            let errorMessage = 'Gagal membuat pesanan: ';
+            if (error.details) {
+                errorMessage += error.details;
+            } else if (error.message) {
+                errorMessage += error.message;
+            } else {
+                errorMessage += 'Terjadi kesalahan pada server';
+            }
+            
+            showNotification(errorMessage, 'error');
+            return;
+        }
 
+        console.log('✅ Order created successfully:', data);
+        
         sendWAOrderNotification(orderData);
         localStorage.removeItem('currentOrder');
         window.updateOrderBadge();
         showSuccessPage(orderNumber);
+        
     } catch (error) {
-        console.error('Error:', error);
-        showNotification('Gagal membuat pesanan!', 'error');
+        console.error('❌ Exception:', error);
+        showNotification('Gagal membuat pesanan: ' + error.message, 'error');
     }
 }
 
+// ============================================
+// GENERATE ORDER NUMBER
+// ============================================
 function generateOrderNumber() {
     const date = new Date();
     const timestamp = date.getFullYear() + 
@@ -470,6 +515,9 @@ function generateOrderNumber() {
     return `BFC${timestamp}${random}`;
 }
 
+// ============================================
+// SEND WA NOTIFICATION
+// ============================================
 function sendWAOrderNotification(orderData) {
     const message = `*Pesanan Baru Babeh Fried Chicken!*%0A%0A` +
         `No. Pesanan: ${orderData.order_number}%0A` +
@@ -489,6 +537,9 @@ function sendWAOrderNotification(orderData) {
     window.open(`https://wa.me/6282121266056?text=${message}`, '_blank');
 }
 
+// ============================================
+// SHOW SUCCESS PAGE
+// ============================================
 function showSuccessPage(orderNumber) {
     const container = document.getElementById('order-form-container');
     if (!container) return;
@@ -498,7 +549,8 @@ function showSuccessPage(orderNumber) {
             <i class="fas fa-check-circle fa-4x" style="color:#28a745;"></i>
             <h2>Pesanan Berhasil!</h2>
             <p>Nomor Pesanan: <strong>${orderNumber}</strong></p>
-            <p>Silakan lakukan pembayaran.</p>
+            <p>Silakan lakukan pembayaran melalui metode yang dipilih.</p>
+            <p>Kami akan mengirimkan konfirmasi melalui WhatsApp.</p>
             <button onclick="window.location.reload()" class="btn btn-primary">
                 <i class="fas fa-sync"></i> Pesan Lagi
             </button>
@@ -535,6 +587,15 @@ window.updateOrderBadge = function() {
 };
 
 // ============================================
+// TOGGLE SHIPPING METHOD
+// ============================================
+function toggleShippingMethod() {
+    // Hanya support direct search
+    const searchMethod = document.getElementById('search-method');
+    if (searchMethod) searchMethod.style.display = 'block';
+}
+
+// ============================================
 // INIT
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -549,6 +610,8 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', function(e) {
             searchDestination(e.target.value.trim());
         });
+    } else {
+        console.warn('⚠️ search-destination not found');
     }
     
     // Close search results
@@ -575,7 +638,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const orderForm = document.getElementById('order-form');
     if (orderForm) {
         orderForm.addEventListener('submit', submitOrder);
+    } else {
+        console.warn('⚠️ order-form not found');
     }
+    
+    // Toggle shipping method (only direct search)
+    toggleShippingMethod();
     
     console.log('✅ Order page initialized');
 });
