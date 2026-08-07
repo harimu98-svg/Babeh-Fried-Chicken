@@ -1,20 +1,28 @@
-// js/order.js - VERSI FINAL DENGAN NETLIFY FUNCTIONS
+// js/order.js - VERSI FINAL
 
 // ===== KONFIGURASI =====
-// Panggil Netlify Function (bukan langsung ke RajaOngkir)
 const API_BASE_URL = '/.netlify/functions/rajaongkir';
 
 // ===== LOAD PROVINCES =====
 async function loadShippingCosts() {
     try {
-        // Panggil Netlify Function (bukan langsung ke API)
         const response = await fetch(`${API_BASE_URL}/province`);
         const data = await response.json();
         
-        console.log('Province data:', data); // Debugging
+        console.log('Province data:', data);
+        
+        // Cek apakah ada error dari function
+        if (data.error) {
+            throw new Error(data.error);
+        }
         
         if (data.rajaongkir && data.rajaongkir.status.code === 200) {
             const select = document.getElementById('province-select');
+            if (!select) {
+                console.error('Element province-select not found');
+                return;
+            }
+            
             select.innerHTML = '<option value="">Pilih Provinsi</option>';
             data.rajaongkir.results.forEach(province => {
                 const option = document.createElement('option');
@@ -27,28 +35,35 @@ async function loadShippingCosts() {
         }
     } catch (error) {
         console.error('Error loading provinces:', error);
-        showNotification('Gagal memuat data provinsi', 'error');
-        loadStaticProvinces(); // Fallback
+        showNotification('Gagal memuat data provinsi. Gunakan ongkir manual.', 'error');
+        loadStaticProvinces();
     }
 }
 
 // ===== LOAD CITIES =====
 async function loadCities(provinceId) {
     if (!provinceId) {
-        document.getElementById('city-select').innerHTML = '<option value="">Pilih Kota</option>';
-        document.getElementById('district-select').innerHTML = '<option value="">Pilih Kecamatan</option>';
+        const citySelect = document.getElementById('city-select');
+        if (citySelect) citySelect.innerHTML = '<option value="">Pilih Kota</option>';
+        const districtSelect = document.getElementById('district-select');
+        if (districtSelect) districtSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
         return;
     }
     
     try {
-        // Panggil Netlify Function
         const response = await fetch(`${API_BASE_URL}/city?province=${provinceId}`);
         const data = await response.json();
         
-        console.log('City data:', data); // Debugging
+        console.log('City data:', data);
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
         
         if (data.rajaongkir && data.rajaongkir.status.code === 200) {
             const select = document.getElementById('city-select');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Pilih Kota</option>';
             data.rajaongkir.results.forEach(city => {
                 const option = document.createElement('option');
@@ -66,19 +81,25 @@ async function loadCities(provinceId) {
 // ===== LOAD DISTRICTS =====
 async function loadDistricts(cityId) {
     if (!cityId) {
-        document.getElementById('district-select').innerHTML = '<option value="">Pilih Kecamatan</option>';
+        const districtSelect = document.getElementById('district-select');
+        if (districtSelect) districtSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
         return;
     }
     
     try {
-        // Panggil Netlify Function
         const response = await fetch(`${API_BASE_URL}/district?city=${cityId}`);
         const data = await response.json();
         
-        console.log('District data:', data); // Debugging
+        console.log('District data:', data);
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
         
         if (data.rajaongkir && data.rajaongkir.status.code === 200) {
             const select = document.getElementById('district-select');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Pilih Kecamatan</option>';
             data.rajaongkir.results.forEach(district => {
                 const option = document.createElement('option');
@@ -95,27 +116,27 @@ async function loadDistricts(cityId) {
 
 // ===== CALCULATE SHIPPING =====
 async function calculateShipping() {
-    const districtId = document.getElementById('district-select').value;
+    const districtId = document.getElementById('district-select')?.value;
     if (!districtId) {
-        document.getElementById('shipping-cost').value = 0;
-        document.getElementById('shipping-service').textContent = '';
+        const shippingCost = document.getElementById('shipping-cost');
+        if (shippingCost) shippingCost.value = 0;
+        const shippingService = document.getElementById('shipping-service');
+        if (shippingService) shippingService.textContent = '';
         updateTotal();
         return;
     }
 
-    // Hitung berat total (estimasi 1kg per item)
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
     const totalWeight = order.items.reduce((sum, item) => sum + (1 * item.quantity), 0) || 1;
 
     try {
-        // Panggil Netlify Function
         const response = await fetch(`${API_BASE_URL}/cost`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                origin: '501', // Jakarta Pusat (contoh)
+                origin: '501',
                 destination: districtId,
                 weight: totalWeight * 1000,
                 courier: 'jne'
@@ -124,20 +145,28 @@ async function calculateShipping() {
         
         const data = await response.json();
         
-        console.log('Cost data:', data); // Debugging
+        console.log('Cost data:', data);
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
         
         if (data.rajaongkir && data.rajaongkir.status.code === 200) {
             const costs = data.rajaongkir.results[0].costs;
             if (costs && costs.length > 0) {
-                // Ambil yang termurah
                 const cheapest = costs.reduce((min, cost) => {
                     const price = cost.cost[0].value;
                     return price < min.cost[0].value ? cost : min;
                 });
                 
-                document.getElementById('shipping-cost').value = cheapest.cost[0].value;
-                document.getElementById('shipping-service').textContent = 
-                    `${cheapest.service} - ${cheapest.description} (${cheapest.cost[0].etd} hari)`;
+                const shippingCost = document.getElementById('shipping-cost');
+                if (shippingCost) shippingCost.value = cheapest.cost[0].value;
+                
+                const shippingService = document.getElementById('shipping-service');
+                if (shippingService) {
+                    shippingService.textContent = 
+                        `${cheapest.service} - ${cheapest.description} (${cheapest.cost[0].etd} hari)`;
+                }
                 updateTotal();
             }
         } else {
@@ -145,17 +174,19 @@ async function calculateShipping() {
         }
     } catch (error) {
         console.error('Error calculating shipping:', error);
-        document.getElementById('shipping-cost').value = 0;
+        const shippingCost = document.getElementById('shipping-cost');
+        if (shippingCost) shippingCost.value = 0;
         showNotification('Gagal menghitung ongkir', 'error');
     }
 }
 
 // ===== UPDATE TOTAL =====
 function updateTotal() {
-    const subtotal = parseInt(document.getElementById('subtotal').value) || 0;
-    const shipping = parseInt(document.getElementById('shipping-cost').value) || 0;
+    const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
+    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
     const total = subtotal + shipping;
-    document.getElementById('grand-total').textContent = formatRupiah(total);
+    const grandTotal = document.getElementById('grand-total');
+    if (grandTotal) grandTotal.textContent = formatRupiah(total);
 }
 
 // ===== FORMAT RUPIAH =====
@@ -212,6 +243,8 @@ function loadStaticProvinces() {
     ];
 
     const select = document.getElementById('province-select');
+    if (!select) return;
+    
     select.innerHTML = '<option value="">Pilih Provinsi</option>';
     staticProvinces.forEach(province => {
         const option = document.createElement('option');
@@ -223,21 +256,28 @@ function loadStaticProvinces() {
 
 // ===== INISIALISASI =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Load provinces saat halaman dimuat
+    // Load provinces
     loadShippingCosts();
     
-    // Event listener untuk province change
-    document.getElementById('province-select').addEventListener('change', function() {
-        loadCities(this.value);
-    });
+    // Event listeners dengan null check
+    const provinceSelect = document.getElementById('province-select');
+    if (provinceSelect) {
+        provinceSelect.addEventListener('change', function() {
+            loadCities(this.value);
+        });
+    }
     
-    // Event listener untuk city change
-    document.getElementById('city-select').addEventListener('change', function() {
-        loadDistricts(this.value);
-    });
+    const citySelect = document.getElementById('city-select');
+    if (citySelect) {
+        citySelect.addEventListener('change', function() {
+            loadDistricts(this.value);
+        });
+    }
     
-    // Event listener untuk district change
-    document.getElementById('district-select').addEventListener('change', function() {
-        calculateShipping();
-    });
+    const districtSelect = document.getElementById('district-select');
+    if (districtSelect) {
+        districtSelect.addEventListener('change', function() {
+            calculateShipping();
+        });
+    }
 });
