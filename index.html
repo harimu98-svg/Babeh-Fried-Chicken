@@ -7,10 +7,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* ===== RESET ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; color: #333; }
 
-        /* Header */
+        /* ===== HEADER ===== */
         .header { background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 1rem 0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .logo { font-size: 1.8rem; font-weight: bold; cursor: pointer; }
@@ -22,23 +23,23 @@
         .order-cart i { font-size: 1.5rem; }
         .order-badge { position: absolute; top: -8px; right: -8px; background: #ffd700; color: #333; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none; }
 
-        /* Hero */
+        /* ===== HERO ===== */
         .hero { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('images/hero-bg.jpg'); background-size: cover; background-position: center; color: white; padding: 80px 20px; text-align: center; }
         .hero h1 { font-size: 3rem; margin-bottom: 1rem; }
         .hero p { font-size: 1.2rem; margin-bottom: 2rem; }
 
-        /* Buttons */
+        /* ===== BUTTONS ===== */
         .btn { display: inline-block; padding: 12px 30px; background: #ffd700; color: #333; border: none; border-radius: 30px; font-weight: bold; text-decoration: none; transition: all 0.3s; cursor: pointer; font-size: 1rem; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); }
         .btn-primary { background: #dc3545; color: white; }
         .btn-primary:hover { background: #c82333; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4); }
 
-        /* Sections */
+        /* ===== SECTIONS ===== */
         .section { padding: 60px 20px; max-width: 1200px; margin: 0 auto; }
         .section-title { text-align: center; font-size: 2.5rem; margin-bottom: 3rem; color: #dc3545; }
         .section-title span { color: #ffd700; }
 
-        /* Products */
+        /* ===== PRODUCTS ===== */
         .category-section { margin-bottom: 3rem; }
         .category-title { font-size: 1.8rem; color: #333; margin-bottom: 1.5rem; border-bottom: 3px solid #ffd700; padding-bottom: 0.5rem; }
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; }
@@ -50,10 +51,11 @@
         .product-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
         .product-description { color: #666; font-size: 0.9rem; margin-bottom: 1rem; min-height: 40px; }
         .product-price { font-size: 1.3rem; color: #dc3545; font-weight: bold; margin-bottom: 0.5rem; }
+        .product-weight { font-size: 0.8rem; color: #6c757d; margin-bottom: 10px; }
         .btn-order { width: 100%; padding: 10px; background: #ffd700; color: #333; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
         .btn-order:hover { background: #f0c000; }
 
-        /* Order Form */
+        /* ===== ORDER FORM ===== */
         .order-form-container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 3px 15px rgba(0,0,0,0.1); }
         .order-form-container h3 { color: #dc3545; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #f0f0f0; }
         .form-group { margin-bottom: 1.2rem; }
@@ -63,13 +65,14 @@
         .form-group textarea { min-height: 80px; resize: vertical; }
         .form-group small { display: block; margin-top: 5px; color: #6c757d; font-size: 0.85rem; }
 
-        /* Order Items */
+        /* ===== ORDER ITEMS ===== */
         .order-items { margin: 1rem 0; max-height: 300px; overflow-y: auto; }
         .order-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
         .order-item:last-child { border-bottom: none; }
         .item-info { flex: 1; }
         .item-name { font-weight: 500; }
         .item-price { color: #666; font-size: 0.9rem; }
+        .item-weight { font-size: 0.8rem; color: #6c757d; }
         .item-controls { display: flex; align-items: center; gap: 8px; }
         .qty-btn { width: 30px; height: 30px; border: 1px solid #ddd; background: white; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
         .qty-btn:hover { background: #f0f0f0; border-color: #dc3545; }
@@ -78,10 +81,17 @@
         .remove-btn:hover { transform: scale(1.2); }
         .empty-order { text-align: center; padding: 30px 0; color: #6c757d; }
         .empty-order i { color: #ddd; margin-bottom: 10px; }
+        .empty-order a { color: #dc3545; text-decoration: none; font-weight: 500; }
         .order-total { text-align: right; font-size: 1.2rem; padding-top: 15px; border-top: 2px solid #f0f0f0; }
         .order-total span { color: #dc3545; font-weight: bold; }
+        .order-berat { text-align: right; font-size: 0.9rem; color: #6c757d; padding-top: 5px; }
 
-        /* Search Results */
+        /* ===== SEARCH ===== */
+        .search-container { position: relative; }
+        #search-destination { width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; transition: border-color 0.3s; }
+        #search-destination:focus { border-color: #dc3545; outline: none; box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1); }
+        #search-destination:disabled { background: #f5f5f5; cursor: not-allowed; }
+
         .search-results { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 4px; }
         .search-results.show { display: block !important; }
         .search-result-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee; transition: background 0.2s; }
@@ -89,14 +99,20 @@
         .search-result-item .result-name { font-weight: 500; display: block; }
         .search-result-item .result-location { color: #6c757d; font-size: 0.85rem; }
         .search-result-item .result-badge { display: inline-block; padding: 2px 10px; background: #28a745; color: white; border-radius: 12px; font-size: 0.7rem; margin-top: 4px; }
-        .selected-location { display: none; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; margin: 10px 0; }
-        .selected-location.show { display: block; }
 
-        /* Shipping */
+        .selected-location { display: none; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; margin: 10px 0; }
+        .selected-location.show { display: block !important; }
+
+        /* ===== SHIPPING ===== */
         .shipping-cost-box { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; border: 2px solid #e9ecef; }
         .shipping-cost-box .cost-amount { font-size: 1.8rem; color: #dc3545; font-weight: bold; }
+        .shipping-cost-box .cost-service { color: #6c757d; font-size: 0.9rem; margin-top: 5px; }
+        #shipping-options { margin-top: 10px; padding: 12px 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; max-height: 200px; overflow-y: auto; }
+        .option-item { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid #f0f0f0; }
+        .option-item:last-child { border-bottom: none; }
+        .option-item.cheapest { background: #f8f9fa; border-radius: 4px; }
 
-        /* Payment */
+        /* ===== PAYMENT ===== */
         .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .payment-method { display: block; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s; }
         .payment-method:hover { border-color: #dc3545; background: #fff5f5; }
@@ -105,7 +121,7 @@
         .payment-info-box { margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center; }
         .payment-info-box img { max-width: 200px; border-radius: 10px; }
 
-        /* About */
+        /* ===== ABOUT ===== */
         .about-container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 3px 15px rgba(0,0,0,0.1); }
         .about-header { text-align: center; margin-bottom: 3rem; }
         .about-divider { width: 100px; height: 3px; background: #ffd700; margin: 1rem auto; }
@@ -115,7 +131,7 @@
         .advantage-item { text-align: center; padding: 1.5rem; background: #f8f9fa; border-radius: 10px; }
         .advantage-item i { font-size: 2.5rem; color: #dc3545; margin-bottom: 0.5rem; }
 
-        /* Chat Widget */
+        /* ===== CHAT ===== */
         .chat-widget { position: fixed; bottom: 30px; right: 30px; z-index: 999; }
         .chat-toggle { width: 60px; height: 60px; border-radius: 50%; background: #25d366; color: white; border: none; font-size: 2rem; cursor: pointer; box-shadow: 0 3px 15px rgba(37, 211, 102, 0.4); transition: transform 0.3s; }
         .chat-toggle:hover { transform: scale(1.1); }
@@ -130,20 +146,23 @@
         .chat-input input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; }
         .chat-input button { background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
 
-        /* Notifications */
+        /* ===== NOTIFICATIONS ===== */
         .notification { position: fixed; top: 80px; right: 20px; padding: 15px 25px; border-radius: 10px; color: white; z-index: 9999; animation: slideIn 0.3s ease-out; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .notification.success { background: #28a745; }
         .notification.error { background: #dc3545; }
         .notification.info { background: #17a2b8; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+        /* ===== ORDER SUCCESS ===== */
         .order-success { text-align: center; padding: 40px 20px; }
         .order-success i { color: #28a745; margin-bottom: 20px; }
         .order-success h2 { color: #28a745; margin-bottom: 10px; }
 
+        /* ===== FOOTER ===== */
         .footer { background: #333; color: white; padding: 2rem 0; margin-top: 3rem; text-align: center; }
         .footer a { color: #25d366; text-decoration: none; }
 
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .products-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
             .payment-methods { grid-template-columns: 1fr; }
@@ -155,6 +174,7 @@
             .product-info { padding: 0.8rem; }
             .logo { font-size: 1.4rem; }
             .nav-menu a { font-size: 0.75rem; }
+            .section-title { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -195,7 +215,7 @@
     <h2 class="section-title">Pesan <span>Sekarang</span></h2>
     <div id="order-form-container" class="order-form-container">
         <form id="order-form">
-            <!-- Order Summary -->
+            <!-- ===== ORDER SUMMARY ===== -->
             <h3><i class="fas fa-shopping-cart"></i> Pesanan Anda</h3>
             <div id="order-items" class="order-items">
                 <div class="empty-order">
@@ -207,7 +227,7 @@
             <div class="order-total">
                 <strong>Total: </strong><span id="order-total">Rp 0</span>
             </div>
-            <div style="text-align:right; font-size:0.9rem; color:#6c757d;">
+            <div class="order-berat">
                 <i class="fas fa-weight"></i> Berat: <span id="order-berat">0 g</span>
             </div>
 
@@ -217,7 +237,7 @@
             <input type="hidden" id="total-berat" name="total_berat" value="0">
             <input type="hidden" id="shipping-cost" name="shipping_cost" value="0">
 
-            <!-- Customer Info -->
+            <!-- ===== CUSTOMER INFO ===== -->
             <h3><i class="fas fa-user"></i> Data Pemesan</h3>
             <div class="form-group">
                 <label>Nama Lengkap <span style="color:#dc3545;">*</span></label>
@@ -233,29 +253,32 @@
                 <textarea id="customer-address" required placeholder="Jalan, Nomor, RT/RW, Kelurahan, Kecamatan"></textarea>
             </div>
 
-            <!-- Shipping -->
-           <!-- ===== SHIPPING SECTION ===== -->
-<h3><i class="fas fa-truck"></i> Pengiriman</h3>
+            <!-- ===== SHIPPING ===== -->
+            <h3><i class="fas fa-truck"></i> Pengiriman</h3>
 
-<!-- Search Method (Direct Search) - PASTIKAN INI ADA! -->
-<div id="search-method">
-    <div class="form-group" style="position:relative;">
-        <label for="search-destination">Cari Kota/Kecamatan Tujuan <span style="color:#dc3545;">*</span></label>
-        <!-- ⚠️ PASTIKAN ID = "search-destination" -->
-        <input type="text" id="search-destination" 
-               placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" 
-               autocomplete="off" style="width:100%; padding:12px; border:2px solid #ddd; border-radius:8px; font-size:1rem;">
-        <!-- ⚠️ PASTIKAN ID = "search-results" -->
-        <div class="search-results" id="search-results"></div>
-        <small>Ketik minimal 3 karakter untuk mulai mencari</small>
-    </div>
+            <!-- Origin Info -->
+            <div class="form-group" style="background:#f8f9fa; padding:12px 15px; border-radius:8px;">
+                <small style="color:#6c757d;">
+                    <i class="fas fa-store"></i> <span id="origin-info">📍 Lokasi toko: Curug, Depok</span>
+                </small>
+            </div>
 
-    <div class="selected-location" id="selected-location">
-        <i class="fas fa-check-circle"></i>
-        <span id="selected-location-text">Lokasi terpilih</span>
-        <input type="hidden" id="selected-subdistrict" value="">
-    </div>
-</div>
+            <!-- ===== SEARCH FIELD ===== -->
+            <div class="form-group search-container">
+                <label for="search-destination">Cari Kota/Kecamatan Tujuan <span style="color:#dc3545;">*</span></label>
+                <input type="text" id="search-destination" 
+                       placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" 
+                       autocomplete="off">
+                <div class="search-results" id="search-results"></div>
+                <small>Ketik minimal 3 karakter untuk mulai mencari</small>
+            </div>
+
+            <!-- Selected Location -->
+            <div class="selected-location" id="selected-location">
+                <i class="fas fa-check-circle"></i>
+                <span id="selected-location-text">Lokasi terpilih</span>
+                <input type="hidden" id="selected-subdistrict" value="">
+            </div>
 
             <!-- Courier Selection -->
             <div class="form-group">
@@ -285,11 +308,11 @@
                 <div class="cost-service" id="shipping-service"></div>
             </div>
 
-            <div id="shipping-options" style="margin-top:10px; padding:12px 15px; background:#f8f9fa; border-radius:8px; border:1px solid #e9ecef;">
+            <div id="shipping-options">
                 <div style="font-size:0.9rem; color:#6c757d;">Pilih kurir untuk melihat ongkir</div>
             </div>
 
-            <!-- Payment -->
+            <!-- ===== PAYMENT ===== -->
             <h3><i class="fas fa-credit-card"></i> Metode Pembayaran</h3>
             <div class="form-group">
                 <div class="payment-methods">
@@ -376,12 +399,13 @@
 <script src="js/chat-admin.js"></script>
 
 <script>
+    // Toggle chat
     function toggleChat() {
         document.getElementById('chat-box').classList.toggle('active');
     }
 
+    // Payment method toggle
     document.addEventListener('DOMContentLoaded', function() {
-        // Payment method toggle
         document.querySelectorAll('.payment-method').forEach(el => {
             el.addEventListener('click', function() {
                 document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
