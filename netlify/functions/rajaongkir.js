@@ -1,6 +1,4 @@
 // netlify/functions/rajaongkir.js
-// PERBAIKI: Tambahkan endpoint /search
-
 exports.handler = async function(event, context) {
     const headers = {
         'Access-Control-Allow-Origin': '*',
@@ -27,12 +25,12 @@ exports.handler = async function(event, context) {
         const { path, queryStringParameters, httpMethod, body } = event;
         
         console.log('📌 Path:', path);
-        console.log('📌 Query:', queryStringParameters);
+        console.log('📌 Method:', httpMethod);
 
         // ============================================
-        // SEARCH ENDPOINT - /search
+        // SEARCH ENDPOINT
         // ============================================
-        if ((path.includes('/search') || path.includes('/destination')) && httpMethod === 'GET') {
+        if (path.includes('/search') && httpMethod === 'GET') {
             const search = queryStringParameters?.q || queryStringParameters?.search || '';
             const limit = queryStringParameters?.limit || 20;
             const offset = queryStringParameters?.offset || 0;
@@ -78,7 +76,7 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // COST ENDPOINT - /cost
+        // COST ENDPOINT
         // ============================================
         if (path.includes('/cost') && httpMethod === 'POST') {
             let data;
@@ -108,7 +106,8 @@ exports.handler = async function(event, context) {
                     statusCode: 400,
                     headers,
                     body: JSON.stringify({ 
-                        error: 'Missing required fields' 
+                        error: 'Missing required fields',
+                        received: data
                     })
                 };
             }
@@ -121,6 +120,8 @@ exports.handler = async function(event, context) {
                 price: data.price || 'lowest'
             });
             
+            console.log('📤 Sending to RajaOngkir:', formBody.toString());
+            
             const response = await fetch(`${BASE_URL}/calculate/domestic-cost`, {
                 method: 'POST',
                 headers: {
@@ -130,20 +131,35 @@ exports.handler = async function(event, context) {
                 body: formBody.toString()
             });
             
+            const responseText = await response.text();
+            console.log('📥 Raw Response:', responseText);
+            
             if (!response.ok) {
-                const errorText = await response.text();
                 return {
                     statusCode: response.status,
                     headers,
                     body: JSON.stringify({ 
                         error: 'RajaOngkir API error',
                         status: response.status,
-                        details: errorText
+                        details: responseText
                     })
                 };
             }
             
-            const result = await response.json();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (e) {
+                return {
+                    statusCode: 500,
+                    headers,
+                    body: JSON.stringify({ 
+                        error: 'Invalid JSON response',
+                        raw: responseText
+                    })
+                };
+            }
+            
             console.log('✅ Cost calculated');
             
             return {
@@ -163,13 +179,13 @@ exports.handler = async function(event, context) {
         };
 
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('❌ Function Error:', error);
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
                 error: 'Internal server error',
-                message: error.message 
+                message: error.message
             })
         };
     }
