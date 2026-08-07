@@ -1,9 +1,49 @@
-// js/produk-harga.js
-document.addEventListener('DOMContentLoaded', function() {
-    loadProducts();
-    window.updateOrderBadge();
-});
+// js/produk-harga.js - FULL DENGAN REALTIME
 
+// ============================================
+// REALTIME SUBSCRIPTION UNTUK PRODUK
+// ============================================
+let productChannel = null;
+
+function subscribeToProductChanges() {
+    // Hapus subscription lama jika ada
+    if (productChannel) {
+        window.supabaseClient.removeChannel(productChannel);
+    }
+
+    console.log('🔄 Subscribing to product changes...');
+
+    productChannel = window.supabaseClient
+        .channel('product-changes')
+        .on(
+            'postgres_changes',
+            {
+                event: '*', // INSERT, UPDATE, DELETE
+                schema: 'public',
+                table: 'produk_fried_chicken'
+            },
+            (payload) => {
+                console.log('📦 Produk berubah!', payload);
+                console.log('📦 Event type:', payload.eventType);
+                console.log('📦 Data:', payload.new || payload.old);
+                
+                // 🔥 LANGSUNG LOAD ULANG PRODUK TANPA REFRESH!
+                showNotification('🔄 Menu sedang diperbarui...', 'info');
+                loadProducts();
+            }
+        )
+        .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('✅ Subscribed to product changes!');
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error('❌ Subscription error:', err);
+            }
+        });
+}
+
+// ============================================
+// LOAD PRODUCTS (EXISTING)
+// ============================================
 async function loadProducts() {
     try {
         const { data: products, error } = await window.supabaseClient
@@ -14,6 +54,7 @@ async function loadProducts() {
 
         if (error) throw error;
         displayProducts(products);
+        console.log('✅ Products loaded:', products.length);
     } catch (error) {
         console.error('Error loading products:', error);
         document.getElementById('products-container').innerHTML = `
@@ -22,6 +63,9 @@ async function loadProducts() {
     }
 }
 
+// ============================================
+// DISPLAY PRODUCTS (EXISTING)
+// ============================================
 function displayProducts(products) {
     const container = document.getElementById('products-container');
     
@@ -52,7 +96,7 @@ function displayProducts(products) {
                         <p class="product-description">${product.deskripsi || ''}</p>
                         <div class="product-price">Rp ${formatRupiah(product.harga)}</div>
                         <div class="product-weight"><i class="fas fa-weight"></i> ${berat}g</div>
-                        <button class="btn-order" onclick="window.addToOrder(${product.id}, '${product.nama_produk}', ${product.harga}, ${berat})">
+                        <button class="btn-order" onclick="window.addToOrder(${product.id}, '${product.nama_produk}', ${product.harga}, ${product.berat || 250})">
                             <i class="fas fa-plus"></i> Pesan
                         </button>
                     </div>
@@ -69,6 +113,48 @@ function displayProducts(products) {
     container.innerHTML = html || '<p class="text-center">Belum ada produk tersedia</p>';
 }
 
+// ============================================
+// NOTIFICATION
+// ============================================
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+// ============================================
+// FORMAT RUPIAH
+// ============================================
 function formatRupiah(amount) {
     return new Intl.NumberFormat('id-ID').format(amount);
 }
+
+// ============================================
+// INIT
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 Initializing product page...');
+    
+    // Load products
+    loadProducts();
+    
+    // 🔥 SUBSCRIBE REALTIME
+    subscribeToProductChanges();
+    
+    // Update order badge
+    window.updateOrderBadge();
+    
+    console.log('✅ Product page initialized with Realtime');
+});
+
+// ============================================
+// CLEANUP (Opsional)
+// ============================================
+window.addEventListener('beforeunload', function() {
+    if (productChannel) {
+        window.supabaseClient.removeChannel(productChannel);
+        console.log('🔄 Removed product subscription');
+    }
+});
