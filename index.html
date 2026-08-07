@@ -234,31 +234,28 @@
             </div>
 
             <!-- Shipping -->
-            <h3><i class="fas fa-truck"></i> Pengiriman</h3>
-            
-            <div class="form-group" style="background:#f8f9fa; padding:12px 15px; border-radius:8px;">
-                <small style="color:#6c757d;">
-                    <i class="fas fa-store"></i> <span id="origin-info">📍 Lokasi toko: Curug, Depok</span>
-                </small>
-            </div>
+           <!-- ===== SHIPPING SECTION ===== -->
+<h3><i class="fas fa-truck"></i> Pengiriman</h3>
 
-            <!-- Search Method (Direct Search) -->
-            <div id="search-method">
-                <div class="form-group" style="position:relative;">
-                    <label>Cari Kota/Kecamatan Tujuan <span style="color:#dc3545;">*</span></label>
-                    <input type="text" id="search-destination" 
-                           placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" 
-                           autocomplete="off" style="width:100%; padding:12px; border:2px solid #ddd; border-radius:8px;">
-                    <div class="search-results" id="search-results"></div>
-                    <small>Ketik minimal 3 karakter untuk mulai mencari</small>
-                </div>
+<!-- Search Method (Direct Search) - PASTIKAN INI ADA! -->
+<div id="search-method">
+    <div class="form-group" style="position:relative;">
+        <label for="search-destination">Cari Kota/Kecamatan Tujuan <span style="color:#dc3545;">*</span></label>
+        <!-- ⚠️ PASTIKAN ID = "search-destination" -->
+        <input type="text" id="search-destination" 
+               placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" 
+               autocomplete="off" style="width:100%; padding:12px; border:2px solid #ddd; border-radius:8px; font-size:1rem;">
+        <!-- ⚠️ PASTIKAN ID = "search-results" -->
+        <div class="search-results" id="search-results"></div>
+        <small>Ketik minimal 3 karakter untuk mulai mencari</small>
+    </div>
 
-                <div class="selected-location" id="selected-location">
-                    <i class="fas fa-check-circle"></i>
-                    <span id="selected-location-text">Lokasi terpilih</span>
-                    <input type="hidden" id="selected-subdistrict" value="">
-                </div>
-            </div>
+    <div class="selected-location" id="selected-location">
+        <i class="fas fa-check-circle"></i>
+        <span id="selected-location-text">Lokasi terpilih</span>
+        <input type="hidden" id="selected-subdistrict" value="">
+    </div>
+</div>
 
             <!-- Courier Selection -->
             <div class="form-group">
