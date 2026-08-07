@@ -4,7 +4,7 @@
 // Ganti dengan ID yang didapat dari console
 // Contoh: dari hasil di atas, untuk "BOJONG SARI (LAMA)" ID-nya berapa?
 // Kita perlu lihat response lengkapnya dulu
-const ORIGIN_SUBDISTRICT_ID = 'YOUR_SUBDISTRICT_ID'; // Ganti nanti
+const ORIGIN_SUBDISTRICT_ID = '26017'; // Ganti nanti
 const ORIGIN_NAME = 'Bojongsari, Depok, Jawa Barat';
 
 // ============================================
