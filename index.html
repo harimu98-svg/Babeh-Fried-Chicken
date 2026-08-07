@@ -1083,7 +1083,16 @@
                 <!-- Shipping Section -->
                 <h3><i class="fas fa-truck"></i> Pengiriman</h3>
 
-                <!-- Di bagian shipping, ubah method default ke search -->
+               <h3><i class="fas fa-truck"></i> Pengiriman</h3>
+
+<!-- Informasi Origin (Hardcode) -->
+<div class="form-group" style="background:#f8f9fa; padding:12px 15px; border-radius:8px; margin-bottom:15px;">
+    <small style="color:#6c757d; display:block;">
+        <i class="fas fa-store"></i> 
+        <span id="origin-info">📍 Lokasi toko: Bojongsari, Depok, Jawa Barat</span>
+    </small>
+</div>
+
 <div class="form-group">
     <label for="shipping-method">Metode Pencarian Lokasi</label>
     <select id="shipping-method" onchange="toggleShippingMethod()">
@@ -1092,22 +1101,10 @@
     </select>
 </div>
 
-<!-- Sembunyikan step method -->
-<div id="step-method" style="display:none;">
-    <div class="form-group">
-        <label>⚠️ Step-by-Step Method Tidak Tersedia</label>
-        <div style="padding:15px; background:#fff3cd; border-radius:8px; color:#856404;">
-            <i class="fas fa-exclamation-triangle"></i>
-            API RajaOngkir V2 tidak menyediakan endpoint untuk mendapatkan daftar provinsi/kota.
-            Silakan gunakan metode <strong>Direct Search</strong>.
-        </div>
-    </div>
-</div>
-
-<!-- Search method aktif -->
+<!-- ===== SEARCH METHOD ===== -->
 <div id="search-method">
     <div class="form-group" style="position:relative;">
-        <label for="search-destination">Cari Kota/Kecamatan <span class="required">*</span></label>
+        <label for="search-destination">Cari Kota/Kecamatan Tujuan <span class="required">*</span></label>
         <input type="text" id="search-destination" 
                placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" 
                autocomplete="off" style="width:100%; padding:12px; border:2px solid #ddd; border-radius:8px; font-size:1rem;">
@@ -1121,15 +1118,63 @@
         <input type="hidden" id="selected-subdistrict" value="">
     </div>
 </div>
-                <!-- Shipping Cost -->
-                <div class="form-group shipping-cost-box">
-                    <label style="font-weight: bold;">Ongkos Kirim</label>
-                    <div class="cost-amount" id="shipping-cost-display">Rp 0</div>
-                    <div class="cost-service" id="shipping-service"></div>
-                    <div class="cost-error" id="shipping-error">
-                        <i class="fas fa-exclamation-circle"></i> Gagal menghitung ongkir
-                    </div>
-                </div>
+
+<!-- ===== STEP METHOD (DISABLED) ===== -->
+<div id="step-method" style="display:none;">
+    <div class="form-group">
+        <label>⚠️ Step-by-Step Method Tidak Tersedia</label>
+        <div style="padding:15px; background:#fff3cd; border-radius:8px; color:#856404;">
+            <i class="fas fa-exclamation-triangle"></i>
+            API RajaOngkir V2 tidak menyediakan endpoint untuk mendapatkan daftar provinsi/kota.
+            Silakan gunakan metode <strong>Direct Search</strong>.
+        </div>
+    </div>
+</div>
+
+<!-- ===== PILIHAN KURIR ===== -->
+<div class="form-group">
+    <label for="courier-select">Pilih Kurir</label>
+    <select id="courier-select">
+        <option value="jne">JNE</option>
+        <option value="sicepat">SiCepat</option>
+        <option value="jnt">J&T</option>
+        <option value="tiki">TIKI</option>
+        <option value="pos">POS Indonesia</option>
+        <option value="anteraja">Anteraja</option>
+        <option value="ninja">Ninja Express</option>
+        <option value="wahana">Wahana</option>
+        <option value="lion">Lion Parcel</option>
+        <option value="rex">REX</option>
+        <option value="rpx">RPX</option>
+        <option value="sap">SAP Express</option>
+        <option value="ide">IDE Express</option>
+        <option value="ncs">NCS</option>
+        <option value="sentral">Sentral Cargo</option>
+        <option value="star">Star Cargo</option>
+        <option value="dse">DSE</option>
+    </select>
+    <small>Pilih kurir untuk membandingkan ongkir</small>
+</div>
+
+<!-- ===== SHIPPING COST ===== -->
+<div class="form-group shipping-cost-box">
+    <label style="font-weight: bold;">Ongkos Kirim</label>
+    <div id="shipping-loader" style="display:none; text-align:center; padding:10px;">
+        <i class="fas fa-spinner fa-spin"></i> Menghitung ongkir...
+    </div>
+    <div class="cost-amount" id="shipping-cost-display">Rp 0</div>
+    <div class="cost-service" id="shipping-service"></div>
+    <div class="cost-error" id="shipping-error">
+        <i class="fas fa-exclamation-circle"></i> Gagal menghitung ongkir
+    </div>
+</div>
+
+<!-- ===== SEMUA PILIHAN ONGKIR ===== -->
+<div id="shipping-options" style="margin-top:10px; padding:12px 15px; background:#f8f9fa; border-radius:8px; border:1px solid #e9ecef;">
+    <div style="font-size:0.9rem; color:#6c757d;">
+        <i class="fas fa-truck"></i> Pilih kurir untuk melihat ongkir
+    </div>
+</div>
 
                 <!-- Payment Section -->
                 <h3><i class="fas fa-credit-card"></i> Metode Pembayaran</h3>
