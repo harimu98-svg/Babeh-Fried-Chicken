@@ -1,5 +1,5 @@
 // netlify/functions/rajaongkir.js
-// VERSI DENGAN FORM-ENCODED BODY
+// SESUAI DENGAN POSTMAN COLLECTION
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -77,7 +77,7 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 2. CALCULATE DOMESTIC COST
+        // 2. CALCULATE DOMESTIC COST (SESUAI COLLECTION)
         // ============================================
         if (path.includes('/cost') && httpMethod === 'POST') {
             let data;
@@ -118,7 +118,7 @@ exports.handler = async function(event, context) {
                 };
             }
             
-            // Build form-urlencoded body
+            // Build form-urlencoded body (sesuai collection)
             const formBody = new URLSearchParams({
                 origin: data.origin,
                 destination: data.destination,
@@ -126,6 +126,8 @@ exports.handler = async function(event, context) {
                 courier: data.courier,
                 price: data.price || 'lowest'
             });
+            
+            console.log('📦 Request body:', formBody.toString());
             
             const response = await fetch(`${BASE_URL}/calculate/domestic-cost`, {
                 method: 'POST',
@@ -152,6 +154,7 @@ exports.handler = async function(event, context) {
             
             const result = await response.json();
             console.log('✅ Cost calculated successfully');
+            console.log('📦 Response:', JSON.stringify(result, null, 2));
             
             return {
                 statusCode: 200,
