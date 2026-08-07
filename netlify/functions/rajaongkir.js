@@ -1,5 +1,5 @@
 // netlify/functions/rajaongkir.js
-// VERSI: Direct Search Method (sesuai dokumentasi)
+// VERSI DENGAN FORM-ENCODED BODY
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -26,17 +26,15 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        const { path, queryStringParameters, httpMethod } = event;
-        
-        console.log('📌 Request path:', path);
-        console.log('📌 Query params:', queryStringParameters);
+        const { path, queryStringParameters, httpMethod, body } = event;
 
         // ============================================
         // 1. SEARCH DOMESTIC DESTINATION
         // ============================================
-        // GET /search?q=jakarta
         if (path.includes('/search') && httpMethod === 'GET') {
             const search = queryStringParameters?.q || queryStringParameters?.search || '';
+            const limit = queryStringParameters?.limit || 20;
+            const offset = queryStringParameters?.offset || 0;
             
             if (!search || search.length < 3) {
                 return {
@@ -51,7 +49,7 @@ exports.handler = async function(event, context) {
             console.log(`🔄 Searching: "${search}"`);
             
             const response = await fetch(
-                `${BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(search)}&limit=20`,
+                `${BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(search)}&limit=${limit}&offset=${offset}`,
                 { headers: { 'key': API_KEY } }
             );
             
@@ -71,17 +69,10 @@ exports.handler = async function(event, context) {
             const data = await response.json();
             console.log(`✅ Search results: ${data.data?.length || 0} items`);
             
-            // Format response
-            const results = data.data || [];
             return {
                 statusCode: 200,
                 headers,
-                body: JSON.stringify({
-                    rajaongkir: {
-                        status: { code: 200, description: 'OK' },
-                        results: results
-                    }
-                })
+                body: JSON.stringify(data)
             };
         }
 
@@ -89,40 +80,65 @@ exports.handler = async function(event, context) {
         // 2. CALCULATE DOMESTIC COST
         // ============================================
         if (path.includes('/cost') && httpMethod === 'POST') {
-            const data = JSON.parse(event.body);
+            let data;
             
-            console.log(`🔄 Calculating domestic cost...`);
+            // Cek content-type
+            const contentType = event.headers['content-type'] || '';
+            
+            if (contentType.includes('application/x-www-form-urlencoded')) {
+                // Parse form-urlencoded
+                const params = new URLSearchParams(body);
+                data = {
+                    origin: params.get('origin'),
+                    destination: params.get('destination'),
+                    weight: params.get('weight'),
+                    courier: params.get('courier'),
+                    price: params.get('price') || 'lowest'
+                };
+            } else {
+                // Parse JSON
+                data = JSON.parse(body);
+            }
+            
+            console.log('🔄 Calculating domestic cost...');
             console.log('📌 Origin:', data.origin);
             console.log('📌 Destination:', data.destination);
             console.log('📌 Weight:', data.weight);
             console.log('📌 Courier:', data.courier);
+            console.log('📌 Price:', data.price || 'lowest');
             
+            // Validasi
             if (!data.origin || !data.destination || !data.weight || !data.courier) {
                 return {
                     statusCode: 400,
                     headers,
                     body: JSON.stringify({ 
-                        error: 'Missing required fields' 
+                        error: 'Missing required fields: origin, destination, weight, courier' 
                     })
                 };
             }
+            
+            // Build form-urlencoded body
+            const formBody = new URLSearchParams({
+                origin: data.origin,
+                destination: data.destination,
+                weight: data.weight,
+                courier: data.courier,
+                price: data.price || 'lowest'
+            });
             
             const response = await fetch(`${BASE_URL}/calculate/domestic-cost`, {
                 method: 'POST',
                 headers: {
                     'key': API_KEY,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: JSON.stringify({
-                    origin: data.origin,
-                    destination: data.destination,
-                    weight: data.weight,
-                    courier: data.courier
-                })
+                body: formBody.toString()
             });
             
             if (!response.ok) {
                 const errorText = await response.text();
+                console.error('❌ API Error:', response.status, errorText);
                 return {
                     statusCode: response.status,
                     headers,
