@@ -1,13 +1,10 @@
-// js/order.js - PERBAIKI DENGAN DEBUG
+// js/order.js - FULL VERSION
 
 // ===== KONFIGURASI =====
 const API_BASE_URL = '/.netlify/functions/rajaongkir';
-
-// ===== HARDCODE ORIGIN =====
 const ORIGIN_SUBDISTRICT_ID = '26017'; // CURUG, DEPOK
 const ORIGIN_NAME = 'Curug, Depok, Jawa Barat';
 
-let originSubdistrictId = ORIGIN_SUBDISTRICT_ID;
 let searchTimeout;
 
 // ============================================
@@ -18,13 +15,12 @@ function setOrigin() {
     if (originInfo) {
         originInfo.textContent = `📍 Lokasi toko: ${ORIGIN_NAME}`;
     }
-    console.log('✅ Origin set:', { id: ORIGIN_SUBDISTRICT_ID, name: ORIGIN_NAME });
     localStorage.setItem('origin_subdistrict_id', ORIGIN_SUBDISTRICT_ID);
     localStorage.setItem('origin_name', ORIGIN_NAME);
 }
 
 // ============================================
-// LOAD ORDER ITEMS - DENGAN DEFAULT BERAT
+// LOAD ORDER ITEMS - AMBIL BERAT DARI PRODUK
 // ============================================
 function loadOrderItems() {
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
@@ -32,12 +28,11 @@ function loadOrderItems() {
     const totalContainer = document.getElementById('order-total');
     const beratContainer = document.getElementById('order-berat');
 
-    console.log('📦 Order data:', order);
+    if (!container) return;
 
-    if (!container) {
-        console.warn('⚠️ order-items element not found');
-        return;
-    }
+    // Hitung ulang berat dari item
+    order.total_berat = order.items.reduce((sum, item) => sum + ((item.weight || 250) * item.quantity), 0);
+    order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     if (order.items.length === 0) {
         container.innerHTML = `
@@ -49,21 +44,19 @@ function loadOrderItems() {
         `;
         if (totalContainer) totalContainer.textContent = 'Rp 0';
         if (beratContainer) beratContainer.textContent = '0 g';
+        updateHiddenFields(order);
         return;
     }
 
     let html = '';
     order.items.forEach(item => {
-        // Pastikan berat ada, jika null gunakan default 250g
         const weight = item.weight || 250;
         html += `
             <div class="order-item">
                 <div class="item-info">
                     <span class="item-name">${item.name}</span>
                     <span class="item-price">Rp ${formatRupiah(item.price)} x ${item.quantity}</span>
-                    <span style="font-size:0.8rem; color:#6c757d; display:block;">
-                        <i class="fas fa-weight"></i> ${weight}g
-                    </span>
+                    <span class="item-weight"><i class="fas fa-weight"></i> ${weight}g</span>
                 </div>
                 <div class="item-controls">
                     <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
@@ -77,27 +70,27 @@ function loadOrderItems() {
 
     container.innerHTML = html;
     if (totalContainer) totalContainer.textContent = `Rp ${formatRupiah(order.total)}`;
-    if (beratContainer) beratContainer.textContent = `${order.total_berat || 0} g`;
+    if (beratContainer) beratContainer.textContent = `${order.total_berat} g`;
 
-    // Update hidden fields
+    updateHiddenFields(order);
+    updateTotal();
+}
+
+function updateHiddenFields(order) {
     const itemsJson = document.getElementById('order-items-json');
     const subtotal = document.getElementById('subtotal');
     const totalBerat = document.getElementById('total-berat');
     
     if (itemsJson) itemsJson.value = JSON.stringify(order.items);
     if (subtotal) subtotal.value = order.total;
-    if (totalBerat) totalBerat.value = order.total_berat || 0;
+    if (totalBerat) totalBerat.value = order.total_berat;
 }
 
 // ============================================
-// ADD TO ORDER - PASTIKAN BERAT TERSIMPAN
+// ADD TO ORDER
 // ============================================
 window.addToOrder = function(productId, productName, price, weight) {
-    // Jika berat null/undefined, gunakan default 250
     const itemWeight = weight || 250;
-    
-    console.log('➕ Adding to order:', { productId, productName, price, weight: itemWeight });
-    
     let order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
     
     const existingItem = order.items.find(item => item.id === productId);
@@ -113,29 +106,51 @@ window.addToOrder = function(productId, productName, price, weight) {
         });
     }
 
-    // Update total dan berat
     order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     order.total_berat = order.items.reduce((sum, item) => sum + ((item.weight || 250) * item.quantity), 0);
     
     localStorage.setItem('currentOrder', JSON.stringify(order));
     window.updateOrderBadge();
     loadOrderItems();
-    
-    showNotification(`✅ ${productName} ditambahkan ke pesanan!`, 'success');
+    showNotification(`✅ ${productName} ditambahkan!`, 'success');
 };
 
 // ============================================
-// SEARCH DESTINATION - DENGAN DEBUG
+// UPDATE QUANTITY
+// ============================================
+function updateQuantity(productId, change) {
+    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
+    const item = order.items.find(i => i.id === productId);
+    
+    if (item) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+            order.items = order.items.filter(i => i.id !== productId);
+        }
+        order.total = order.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        order.total_berat = order.items.reduce((sum, i) => sum + ((i.weight || 250) * i.quantity), 0);
+        localStorage.setItem('currentOrder', JSON.stringify(order));
+        loadOrderItems();
+        window.updateOrderBadge();
+    }
+}
+
+function removeItem(productId) {
+    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
+    order.items = order.items.filter(i => i.id !== productId);
+    order.total = order.items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    order.total_berat = order.items.reduce((sum, i) => sum + ((i.weight || 250) * i.quantity), 0);
+    localStorage.setItem('currentOrder', JSON.stringify(order));
+    loadOrderItems();
+    window.updateOrderBadge();
+}
+
+// ============================================
+// SEARCH DESTINATION
 // ============================================
 async function searchDestination(query) {
     const resultsContainer = document.getElementById('search-results');
-    
-    console.log('🔍 Search triggered:', { query, resultsContainer: !!resultsContainer });
-    
-    if (!resultsContainer) {
-        console.error('❌ search-results element NOT FOUND! Check HTML ID.');
-        return;
-    }
+    if (!resultsContainer) return;
     
     if (!query || query.length < 3) {
         resultsContainer.classList.remove('show');
@@ -152,8 +167,6 @@ async function searchDestination(query) {
             const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}&limit=20`);
             const data = await response.json();
             
-            console.log('📦 Search response:', data);
-            
             let results = [];
             if (data.data && Array.isArray(data.data)) {
                 results = data.data;
@@ -167,7 +180,6 @@ async function searchDestination(query) {
                     const name = item.subdistrict_name || item.name || 'Kecamatan';
                     const city = item.city_name || item.city || 'Kota';
                     const province = item.province || 'Provinsi';
-                    
                     return `
                         <div class="search-result-item" onclick="selectSearchResult('${id}', '${name}', '${city}', '${province}')">
                             <span class="result-name">${name}</span>
@@ -182,7 +194,7 @@ async function searchDestination(query) {
                 resultsContainer.classList.add('show');
             }
         } catch (error) {
-            console.error('❌ Search error:', error);
+            console.error('Search error:', error);
             resultsContainer.innerHTML = `<div class="search-no-results" style="color:#dc3545;">❌ Gagal mencari</div>`;
             resultsContainer.classList.add('show');
         }
@@ -193,27 +205,18 @@ async function searchDestination(query) {
 // SELECT SEARCH RESULT
 // ============================================
 function selectSearchResult(id, name, city, province) {
-    console.log('📍 Selected location:', { id, name, city, province });
-    
     if (!id) {
         showNotification('❌ ID lokasi tidak ditemukan!', 'error');
         return;
     }
     
-    const resultsContainer = document.getElementById('search-results');
-    const searchInput = document.getElementById('search-destination');
+    document.getElementById('search-results').classList.remove('show');
+    document.getElementById('search-destination').value = name;
+    
     const selectedLocation = document.getElementById('selected-location');
-    const locationText = document.getElementById('selected-location-text');
-    const selectedSubdistrict = document.getElementById('selected-subdistrict');
-    
-    if (resultsContainer) resultsContainer.classList.remove('show');
-    if (searchInput) searchInput.value = name;
-    
-    if (selectedLocation && locationText && selectedSubdistrict) {
-        locationText.textContent = `${name}, ${city}, ${province}`;
-        selectedSubdistrict.value = id;
-        selectedLocation.classList.add('show');
-    }
+    document.getElementById('selected-location-text').textContent = `${name}, ${city}, ${province}`;
+    document.getElementById('selected-subdistrict').value = id;
+    selectedLocation.classList.add('show');
     
     calculateShippingWithSubdistrict(id);
 }
@@ -231,10 +234,7 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
     const courier = courierSelect ? courierSelect.value : 'jne';
 
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total_berat": 0}');
-    // Pastikan total_berat tidak null
     const totalWeight = order.total_berat || 1000;
-
-    console.log('📦 Calculating shipping:', { subdistrictId, courier, totalWeight });
 
     const costDisplay = document.getElementById('shipping-cost-display');
     const serviceDisplay = document.getElementById('shipping-service');
@@ -254,8 +254,6 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
         formData.append('courier', courier);
         formData.append('price', 'lowest');
         
-        console.log('📤 Request:', formData.toString());
-        
         const response = await fetch(`${API_BASE_URL}/cost`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -263,7 +261,6 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
         });
         
         const data = await response.json();
-        console.log('📥 Response:', data);
         
         let costs = [];
         if (data.data?.results) {
@@ -300,32 +297,12 @@ async function calculateShippingWithSubdistrict(subdistrictId) {
             throw new Error('Tidak ada pilihan ongkir');
         }
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('Error:', error);
         resetShippingDisplay();
-        showNotification('Gagal menghitung ongkir: ' + error.message, 'error');
+        showNotification('Gagal menghitung ongkir', 'error');
     }
 }
 
-// ============================================
-// UPDATE TOTAL
-// ============================================
-function updateTotal() {
-    const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
-    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
-    const total = subtotal + shipping;
-    
-    const orderTotal = document.getElementById('order-total');
-    if (orderTotal) orderTotal.textContent = `Rp ${formatRupiah(total)}`;
-    
-    const paymentTotal = document.getElementById('payment-total');
-    if (paymentTotal) paymentTotal.textContent = `Rp ${formatRupiah(total)}`;
-    
-    console.log('💰 Total updated:', { subtotal, shipping, total });
-}
-
-// ============================================
-// RESET SHIPPING DISPLAY
-// ============================================
 function resetShippingDisplay() {
     const shippingCost = document.getElementById('shipping-cost');
     const costDisplay = document.getElementById('shipping-cost-display');
@@ -343,9 +320,6 @@ function resetShippingDisplay() {
     if (optionsContainer) optionsContainer.innerHTML = '';
 }
 
-// ============================================
-// DISPLAY SHIPPING OPTIONS
-// ============================================
 function displayShippingOptions(costs) {
     const container = document.getElementById('shipping-options');
     if (!container) return;
@@ -359,7 +333,7 @@ function displayShippingOptions(costs) {
         ${sorted.map((cost, index) => {
             const isCheapest = index === 0;
             return `
-                <div class="option-item" style="display:flex; justify-content:space-between; padding:8px 5px; border-bottom:1px solid #f0f0f0; ${isCheapest ? 'background:#f8f9fa; border-radius:4px;' : ''}">
+                <div class="option-item ${isCheapest ? 'cheapest' : ''}">
                     <span>
                         ${isCheapest ? '🏆 ' : ''}
                         <strong>${cost.courier_name}</strong>
@@ -374,6 +348,21 @@ function displayShippingOptions(costs) {
             `;
         }).join('')}
     `;
+}
+
+// ============================================
+// UPDATE TOTAL
+// ============================================
+function updateTotal() {
+    const subtotal = parseInt(document.getElementById('subtotal')?.value) || 0;
+    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
+    const total = subtotal + shipping;
+    
+    const orderTotal = document.getElementById('order-total');
+    if (orderTotal) orderTotal.textContent = `Rp ${formatRupiah(total)}`;
+    
+    const paymentTotal = document.getElementById('payment-total');
+    if (paymentTotal) paymentTotal.textContent = `Rp ${formatRupiah(total)}`;
 }
 
 // ============================================
@@ -424,8 +413,6 @@ async function submitOrder(event) {
         status: 'pending'
     };
 
-    console.log('📦 Order data:', orderData);
-
     try {
         const { data, error } = await window.supabaseClient
             .from('order_fried_chicken')
@@ -439,13 +426,13 @@ async function submitOrder(event) {
         window.updateOrderBadge();
         showSuccessPage(orderNumber);
     } catch (error) {
-        console.error('Error submitting order:', error);
-        showNotification('Gagal membuat pesanan. Silakan coba lagi!', 'error');
+        console.error('Error:', error);
+        showNotification('Gagal membuat pesanan!', 'error');
     }
 }
 
 // ============================================
-// GENERATE ORDER NUMBER
+// HELPER FUNCTIONS
 // ============================================
 function generateOrderNumber() {
     const date = new Date();
@@ -459,9 +446,6 @@ function generateOrderNumber() {
     return `BFC${timestamp}${random}`;
 }
 
-// ============================================
-// SEND WA NOTIFICATION
-// ============================================
 function sendWAOrderNotification(orderData) {
     const message = `*Pesanan Baru Babeh Fried Chicken!*%0A%0A` +
         `No. Pesanan: ${orderData.order_number}%0A` +
@@ -472,7 +456,7 @@ function sendWAOrderNotification(orderData) {
         orderData.items.map(item => 
             `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)} (${item.weight || 250}g)`
         ).join('%0A') +
-        `%0A%0ABerat Total: ${orderData.total_berat || 0}g%0A` +
+        `%0A%0ABerat Total: ${orderData.total_berat}g%0A` +
         `Subtotal: Rp ${formatRupiah(orderData.subtotal)}%0A` +
         `Ongkir: Rp ${formatRupiah(orderData.shipping_cost)}%0A` +
         `*Total: Rp ${formatRupiah(orderData.total)}*%0A%0A` +
@@ -481,9 +465,6 @@ function sendWAOrderNotification(orderData) {
     window.open(`https://wa.me/6282121266056?text=${message}`, '_blank');
 }
 
-// ============================================
-// SHOW SUCCESS PAGE
-// ============================================
 function showSuccessPage(orderNumber) {
     const container = document.getElementById('order-form-container');
     if (!container) return;
@@ -493,8 +474,7 @@ function showSuccessPage(orderNumber) {
             <i class="fas fa-check-circle fa-4x" style="color:#28a745;"></i>
             <h2>Pesanan Berhasil!</h2>
             <p>Nomor Pesanan: <strong>${orderNumber}</strong></p>
-            <p>Silakan lakukan pembayaran melalui metode yang dipilih.</p>
-            <p>Kami akan mengirimkan konfirmasi melalui WhatsApp.</p>
+            <p>Silakan lakukan pembayaran.</p>
             <button onclick="window.location.reload()" class="btn btn-primary">
                 <i class="fas fa-sync"></i> Pesan Lagi
             </button>
@@ -502,9 +482,6 @@ function showSuccessPage(orderNumber) {
     `;
 }
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
 function formatRupiah(amount) {
     return new Intl.NumberFormat('id-ID').format(amount);
 }
@@ -517,56 +494,43 @@ function showNotification(message, type = 'info') {
     setTimeout(() => notification.remove(), 4000);
 }
 
-function toggleShippingMethod() {
-    const method = document.getElementById('shipping-method')?.value;
-    const stepMethod = document.getElementById('step-method');
-    const searchMethod = document.getElementById('search-method');
-    
-    if (stepMethod) stepMethod.style.display = method === 'step' ? 'block' : 'none';
-    if (searchMethod) searchMethod.style.display = method === 'search' ? 'block' : 'none';
-}
+// ============================================
+// UPDATE ORDER BADGE
+// ============================================
+window.updateOrderBadge = function() {
+    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
+    const badge = document.getElementById('order-badge');
+    if (badge) {
+        const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+        badge.textContent = totalItems;
+        badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+    }
+};
 
 // ============================================
 // INIT
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔄 Initializing order page...');
-    console.log('🔍 Checking elements:');
-    console.log('  - search-destination:', document.getElementById('search-destination'));
-    console.log('  - search-results:', document.getElementById('search-results'));
-    console.log('  - selected-location:', document.getElementById('selected-location'));
-    console.log('  - selected-subdistrict:', document.getElementById('selected-subdistrict'));
     
     setOrigin();
     loadOrderItems();
     
-    // Set default method ke search
-    const shippingMethod = document.getElementById('shipping-method');
-    if (shippingMethod) {
-        shippingMethod.value = 'search';
-    }
-    toggleShippingMethod();
-    
     // Search input
     const searchInput = document.getElementById('search-destination');
     if (searchInput) {
-        console.log('✅ Search input found, attaching event listener');
         searchInput.addEventListener('input', function(e) {
-            const query = e.target.value.trim();
-            console.log('📝 Input event:', query);
-            searchDestination(query);
+            searchDestination(e.target.value.trim());
         });
-    } else {
-        console.error('❌ search-destination element NOT FOUND!');
     }
     
-    // Close results on click outside
+    // Close search results on click outside
     document.addEventListener('click', function(e) {
-        const resultsContainer = document.getElementById('search-results');
-        const searchInputEl = document.getElementById('search-destination');
-        if (resultsContainer && searchInputEl) {
+        const results = document.getElementById('search-results');
+        const input = document.getElementById('search-destination');
+        if (results && input) {
             if (!e.target.closest('#search-destination') && !e.target.closest('#search-results')) {
-                resultsContainer.classList.remove('show');
+                results.classList.remove('show');
             }
         }
     });
@@ -584,8 +548,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const orderForm = document.getElementById('order-form');
     if (orderForm) {
         orderForm.addEventListener('submit', submitOrder);
-    } else {
-        console.warn('⚠️ order-form element not found');
     }
     
     console.log('✅ Order page initialized');
@@ -598,16 +560,6 @@ window.loadOrderItems = loadOrderItems;
 window.updateQuantity = updateQuantity;
 window.removeItem = removeItem;
 window.selectSearchResult = selectSearchResult;
-window.toggleShippingMethod = toggleShippingMethod;
 window.calculateShippingWithSubdistrict = calculateShippingWithSubdistrict;
 window.submitOrder = submitOrder;
-
-window.updateOrderBadge = function() {
-    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": []}');
-    const badge = document.getElementById('order-badge');
-    if (badge) {
-        const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
-        badge.textContent = totalItems;
-        badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
-    }
-};
+window.updateOrderBadge = updateOrderBadge;
