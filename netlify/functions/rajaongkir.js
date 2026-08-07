@@ -1,5 +1,5 @@
 // netlify/functions/rajaongkir.js
-// SESUAI DENGAN POSTMAN COLLECTION
+// PERBAIKI: Tambahkan endpoint /search
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -19,19 +19,20 @@ exports.handler = async function(event, context) {
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
-                error: 'RAJA_ONGKIR_API_KEY not configured' 
-            })
+            body: JSON.stringify({ error: 'RAJA_ONGKIR_API_KEY not configured' })
         };
     }
 
     try {
         const { path, queryStringParameters, httpMethod, body } = event;
+        
+        console.log('📌 Path:', path);
+        console.log('📌 Query:', queryStringParameters);
 
         // ============================================
-        // 1. SEARCH DOMESTIC DESTINATION
+        // SEARCH ENDPOINT - /search
         // ============================================
-        if (path.includes('/search') && httpMethod === 'GET') {
+        if ((path.includes('/search') || path.includes('/destination')) && httpMethod === 'GET') {
             const search = queryStringParameters?.q || queryStringParameters?.search || '';
             const limit = queryStringParameters?.limit || 20;
             const offset = queryStringParameters?.offset || 0;
@@ -46,7 +47,7 @@ exports.handler = async function(event, context) {
                 };
             }
             
-            console.log(`🔄 Searching: "${search}"`);
+            console.log(`🔍 Searching: "${search}"`);
             
             const response = await fetch(
                 `${BASE_URL}/destination/domestic-destination?search=${encodeURIComponent(search)}&limit=${limit}&offset=${offset}`,
@@ -77,16 +78,13 @@ exports.handler = async function(event, context) {
         }
 
         // ============================================
-        // 2. CALCULATE DOMESTIC COST (SESUAI COLLECTION)
+        // COST ENDPOINT - /cost
         // ============================================
         if (path.includes('/cost') && httpMethod === 'POST') {
             let data;
-            
-            // Cek content-type
             const contentType = event.headers['content-type'] || '';
             
             if (contentType.includes('application/x-www-form-urlencoded')) {
-                // Parse form-urlencoded
                 const params = new URLSearchParams(body);
                 data = {
                     origin: params.get('origin'),
@@ -96,29 +94,25 @@ exports.handler = async function(event, context) {
                     price: params.get('price') || 'lowest'
                 };
             } else {
-                // Parse JSON
                 data = JSON.parse(body);
             }
             
-            console.log('🔄 Calculating domestic cost...');
-            console.log('📌 Origin:', data.origin);
-            console.log('📌 Destination:', data.destination);
-            console.log('📌 Weight:', data.weight);
-            console.log('📌 Courier:', data.courier);
-            console.log('📌 Price:', data.price || 'lowest');
+            console.log('🔄 Calculating cost...');
+            console.log('Origin:', data.origin);
+            console.log('Destination:', data.destination);
+            console.log('Weight:', data.weight);
+            console.log('Courier:', data.courier);
             
-            // Validasi
             if (!data.origin || !data.destination || !data.weight || !data.courier) {
                 return {
                     statusCode: 400,
                     headers,
                     body: JSON.stringify({ 
-                        error: 'Missing required fields: origin, destination, weight, courier' 
+                        error: 'Missing required fields' 
                     })
                 };
             }
             
-            // Build form-urlencoded body (sesuai collection)
             const formBody = new URLSearchParams({
                 origin: data.origin,
                 destination: data.destination,
@@ -126,8 +120,6 @@ exports.handler = async function(event, context) {
                 courier: data.courier,
                 price: data.price || 'lowest'
             });
-            
-            console.log('📦 Request body:', formBody.toString());
             
             const response = await fetch(`${BASE_URL}/calculate/domestic-cost`, {
                 method: 'POST',
@@ -140,7 +132,6 @@ exports.handler = async function(event, context) {
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ API Error:', response.status, errorText);
                 return {
                     statusCode: response.status,
                     headers,
@@ -153,8 +144,7 @@ exports.handler = async function(event, context) {
             }
             
             const result = await response.json();
-            console.log('✅ Cost calculated successfully');
-            console.log('📦 Response:', JSON.stringify(result, null, 2));
+            console.log('✅ Cost calculated');
             
             return {
                 statusCode: 200,
@@ -173,7 +163,7 @@ exports.handler = async function(event, context) {
         };
 
     } catch (error) {
-        console.error('❌ Function error:', error);
+        console.error('❌ Error:', error);
         return {
             statusCode: 500,
             headers,
