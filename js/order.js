@@ -420,7 +420,7 @@ async function generateQRISPayment(orderData) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 amount: orderData.total,
-                qris_id: window.QRISLY_CONFIG?.qrisId || 1,
+                qris_id: window.QRISLY_CONFIG?.qrisId || 761,
                 order_number: orderData.order_number
             })
         });
