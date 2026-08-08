@@ -9,7 +9,7 @@ const QRISLY_CONFIG = {
     apiBaseUrl: '/.netlify/functions/qrisly',
     
     // QRIS ID dari upload (boleh di frontend karena bukan rahasia)
-    qrisId: 1, // Ganti setelah upload QRIS berhasil
+    qrisId: 761, // Ganti setelah upload QRIS berhasil
     
     // Konfigurasi lainnya
     outputType: 'image',
