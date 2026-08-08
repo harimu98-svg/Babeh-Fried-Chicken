@@ -98,6 +98,8 @@ exports.handler = async function(event, context) {
             data = { raw: responseText };
         }
 
+        console.log('✅ Status check successful');
+
         return {
             statusCode: 200,
             headers,
