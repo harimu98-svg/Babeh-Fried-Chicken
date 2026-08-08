@@ -530,6 +530,10 @@ function showQRISPaymentModal(orderData) {
     const modal = createQRISModal();
     const content = modal.querySelector('.qris-modal-content');
     
+    const isQrisString = orderData.qrisly_qr_image && 
+                         !orderData.qrisly_qr_image.startsWith('http') && 
+                         !orderData.qrisly_qr_image.startsWith('data:image');
+    
     content.innerHTML = `
         <h3 style="color:#dc3545; margin-bottom:15px;">
             <i class="fas fa-qrcode"></i> Scan QRIS untuk Membayar
@@ -538,12 +542,14 @@ function showQRISPaymentModal(orderData) {
         <p style="margin:5px 0; font-size:1.2rem;">
             Total: <strong style="color:#dc3545;">Rp ${formatRupiah(orderData.total)}</strong>
         </p>
-        <div style="margin:20px 0; padding:15px; background:#f8f9fa; border-radius:10px;">
-            <img src="${orderData.qrisly_qr_image}" alt="QRIS Payment" 
-                 style="max-width:100%; height:auto; border-radius:8px;">
+        <div id="qris-container" style="margin:20px 0; padding:15px; background:#f8f9fa; border-radius:10px; display:flex; justify-content:center;">
+            ${isQrisString ? 
+                `<div id="qrcode" style="width:250px; height:250px;"></div>` :
+                `<img src="${orderData.qrisly_qr_image}" style="max-width:100%; border-radius:8px;">`
+            }
         </div>
         <p style="font-size:0.85rem; color:#6c757d;">
-            ⏰ Kadaluarsa: ${new Date(orderData.qrisly_expired_at).toLocaleString('id-ID')}
+            ⏰ Kadaluarsa: ${orderData.qrisly_expired_at ? new Date(orderData.qrisly_expired_at).toLocaleString('id-ID') : '15 menit'}
         </p>
         <div id="qris-status" style="margin:15px 0; padding:10px; background:#fff3cd; border-radius:8px; color:#856404;">
             ⏳ Menunggu pembayaran...
@@ -563,8 +569,37 @@ function showQRISPaymentModal(orderData) {
     
     modal.style.display = 'flex';
     
-    // 🔥 Mulai polling status
-    startPaymentPolling(orderData.qrisly_history_id, orderData.order_number);
+    // 🔥 Generate QR Code jika QRIS string
+    if (isQrisString) {
+        setTimeout(() => {
+            const container = document.getElementById('qrcode');
+            if (container && typeof QRCode !== 'undefined') {
+                new QRCode(container, {
+                    text: orderData.qrisly_qr_image,
+                    width: 250,
+                    height: 250,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                console.log('✅ QR Code generated from QRIS string');
+            } else {
+                // Fallback ke Google Chart
+                const fallbackImg = document.createElement('img');
+                fallbackImg.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(orderData.qrisly_qr_image)}&chs=300x300&choe=UTF-8`;
+                fallbackImg.style.cssText = 'max-width:100%; border-radius:8px;';
+                const containerDiv = document.getElementById('qris-container');
+                if (containerDiv) {
+                    containerDiv.innerHTML = '';
+                    containerDiv.appendChild(fallbackImg);
+                }
+            }
+        }, 100);
+    }
+    
+    if (orderData.qrisly_history_id) {
+        startPaymentPolling(orderData.qrisly_history_id, orderData.order_number);
+    }
 }
 
 function closeQRISModal() {
