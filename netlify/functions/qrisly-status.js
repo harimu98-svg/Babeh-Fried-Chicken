@@ -14,6 +14,7 @@ exports.handler = async function(event, context) {
         const API_KEY = process.env.QRISLY_API_KEY;
         
         if (!API_KEY) {
+            console.error('❌ QRISLY_API_KEY not configured');
             return {
                 statusCode: 500,
                 headers,
