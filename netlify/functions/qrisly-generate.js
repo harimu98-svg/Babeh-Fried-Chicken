@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-generate.js
-// DENGAN BEBERAPA PILIHAN ENDPOINT
+// SESUAI DOKUMENTASI QRISLY
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -16,6 +16,7 @@ exports.handler = async function(event, context) {
         const API_KEY = process.env.QRISLY_API_KEY;
         
         if (!API_KEY) {
+            console.error('❌ QRISLY_API_KEY not configured');
             return {
                 statusCode: 500,
                 headers,
@@ -23,15 +24,11 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 DAFTAR ENDPOINT YANG MUNGKIN BENAR
-        const endpoints = [
-            'https://api.collaborator.komerce.id/qris/generate',
-            'https://api.collaborator.komerce.id/v1/qris/generate',
-            'https://api.collaborator.komerce.id/user/qris/generate',
-            'https://api.rajaongkir.com/qrisly/generate',
-            'https://api.rajaongkir.com/v1/qrisly/generate',
-            'https://qrisly.rajaongkir.com/api/v1/generate'
-        ];
+        // 🔥 SESUAI DOKUMENTASI: Base URL + /user/qris/generate
+        const BASE_URL = 'https://api.collaborator.komerce.id/user';
+        const GENERATE_ENDPOINT = `${BASE_URL}/qris/generate`;
+        
+        console.log('📌 Endpoint:', GENERATE_ENDPOINT);
 
         let requestData;
         try {
@@ -46,73 +43,84 @@ exports.handler = async function(event, context) {
 
         const { amount, qris_id, order_number } = requestData;
 
-        // 🔥 COBA SETIAP ENDPOINT
-        let lastError = null;
-        
-        for (const endpoint of endpoints) {
-            console.log(`🔄 Trying endpoint: ${endpoint}`);
-            
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'X-API-Key': API_KEY,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        qris_id: qris_id || 761,
-                        amount: amount,
-                        output_type: 'image',
-                        unique_amount: true
-                    })
-                });
+        console.log('🔄 Generating QRIS...');
+        console.log('📌 Amount:', amount);
+        console.log('📌 QRIS ID:', qris_id || 761);
 
-                const responseText = await response.text();
-                console.log(`📥 Status: ${response.status} for ${endpoint}`);
-                console.log(`📥 Response: ${responseText.substring(0, 200)}...`);
+        // 🔥 REQUEST SESUAI DOKUMENTASI
+        const response = await fetch(GENERATE_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'X-API-Key': API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                qris_id: qris_id || 761,
+                amount: amount,
+                output_type: 'image',
+                unique_amount: true
+            })
+        });
 
-                if (response.ok) {
-                    // 🔥 ENDPOINT BERHASIL!
-                    console.log(`✅ Found working endpoint: ${endpoint}`);
-                    
-                    let data;
-                    try {
-                        data = JSON.parse(responseText);
-                    } catch (parseError) {
-                        continue;
-                    }
+        const responseText = await response.text();
+        console.log('📥 Response status:', response.status);
+        console.log('📥 Raw response:', responseText);
 
-                    const qrImage = data?.data?.qr_image || data?.qr_image || data?.data?.qr_string;
-                    const historyId = data?.data?.history_id || data?.history_id;
-                    const expiredAt = data?.data?.expired_at || data?.expired_at;
-
-                    return {
-                        statusCode: 200,
-                        headers,
-                        body: JSON.stringify({
-                            success: true,
-                            history_id: historyId,
-                            qr_image: qrImage,
-                            expired_at: expiredAt,
-                            data: data.data || data,
-                            endpoint_used: endpoint
-                        })
-                    };
-                }
-            } catch (error) {
-                console.error(`❌ Error with ${endpoint}:`, error.message);
-                lastError = error;
-            }
+        // 🔥 CEK 404 - ENDPOINT TIDAK DITEMUKAN
+        if (response.status === 404) {
+            return {
+                statusCode: 404,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'QRISLY endpoint not found',
+                    message: 'The endpoint URL might be incorrect. Please check the documentation.',
+                    tried_endpoint: GENERATE_ENDPOINT,
+                    solution: 'Try using the sandbox endpoint or check the API key permissions.'
+                })
+            };
         }
 
-        // 🔥 SEMUA ENDPOINT GAGAL
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Invalid response from QRISLY',
+                    raw: responseText,
+                    status: response.status
+                })
+            };
+        }
+
+        if (!response.ok) {
+            return {
+                statusCode: response.status,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'QRISLY API error',
+                    status: response.status,
+                    details: data 
+                })
+            };
+        }
+
+        // 🔥 AMBIL DATA SESUAI RESPONSE FORMAT
+        const qrImage = data?.data?.qr_image || data?.qr_image || data?.data?.qr_string;
+        const historyId = data?.data?.history_id || data?.history_id;
+        const expiredAt = data?.data?.expired_at || data?.expired_at;
+
         return {
-            statusCode: 500,
+            statusCode: 200,
             headers,
-            body: JSON.stringify({ 
-                error: 'All QRISLY endpoints failed',
-                message: lastError?.message || 'Unknown error',
-                tried_endpoints: endpoints
+            body: JSON.stringify({
+                success: true,
+                history_id: historyId,
+                qr_image: qrImage,
+                expired_at: expiredAt,
+                data: data.data || data
             })
         };
     } catch (error) {
