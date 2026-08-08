@@ -532,10 +532,6 @@ function showQRISPaymentModal(orderData) {
     const modal = createQRISModal();
     const content = modal.querySelector('.qris-modal-content');
     
-    console.log('📦 Order Data:', orderData);
-    console.log('📌 QRIS Image:', orderData.qrisly_qr_image?.substring(0, 50) + '...');
-    
-    // 🔥 Cek apakah qr_image adalah QRIS string
     const qrData = orderData.qrisly_qr_image;
     const isQrisString = qrData && typeof qrData === 'string' && 
                          !qrData.startsWith('http') && 
@@ -580,7 +576,7 @@ function showQRISPaymentModal(orderData) {
             </div>
             ${isSandbox ? `
                 <p style="font-size:0.7rem; color:#ffc107; margin-top:10px;">
-                    ⚠️ Sandbox Mode - Testing Only (Tidak ada transaksi nyata)
+                    ⚠️ Sandbox Mode - Testing Only
                 </p>
             ` : ''}
             <p style="font-size:0.75rem; color:#6c757d; margin-top:10px;">
@@ -591,61 +587,28 @@ function showQRISPaymentModal(orderData) {
     
     modal.style.display = 'flex';
     
-    // 🔥 Generate QR Code jika QRIS string
     if (isQrisString) {
-        // Tunggu DOM selesai di-render
         setTimeout(() => {
             const container = document.getElementById('qrcode');
             if (container) {
                 try {
-                    // Hapus konten sebelumnya jika ada
                     container.innerHTML = '';
-                    
-                    // 🔥 GENERATE QR CODE DENGAN QRCODE.JS
-                    const qrCode = new QRCode(container, {
+                    new QRCode(container, {
                         text: qrData,
                         width: 250,
                         height: 250,
                         colorDark: "#000000",
                         colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H // High error correction
+                        correctLevel: QRCode.CorrectLevel.H
                     });
-                    
-                    console.log('✅ QR Code generated successfully!');
-                    console.log('📌 QR Code text length:', qrData.length);
+                    console.log('✅ QR Code generated!');
                 } catch (error) {
-                    console.error('❌ QRCode.js error:', error);
-                    // 🔥 FALLBACK: Gunakan Google Chart API
-                    console.log('🔄 Fallback ke Google Chart API...');
-                    const fallbackImg = document.createElement('img');
-                    fallbackImg.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
-                    fallbackImg.style.cssText = 'max-width:100%; border-radius:8px;';
-                    fallbackImg.alt = 'QRIS Payment';
-                    
-                    const containerDiv = document.getElementById('qris-container');
-                    if (containerDiv) {
-                        containerDiv.innerHTML = '';
-                        containerDiv.appendChild(fallbackImg);
-                    }
-                }
-            } else {
-                console.error('❌ QRCode container not found!');
-                // 🔥 FALLBACK: Gunakan Google Chart API
-                const fallbackImg = document.createElement('img');
-                fallbackImg.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
-                fallbackImg.style.cssText = 'max-width:100%; border-radius:8px;';
-                fallbackImg.alt = 'QRIS Payment';
-                
-                const containerDiv = document.getElementById('qris-container');
-                if (containerDiv) {
-                    containerDiv.innerHTML = '';
-                    containerDiv.appendChild(fallbackImg);
+                    console.error('❌ QRCode error:', error);
                 }
             }
         }, 100);
     }
     
-    // Mulai polling status jika ada history_id
     if (orderData.qrisly_history_id) {
         startPaymentPolling(orderData.qrisly_history_id, orderData.order_number);
     }
