@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-generate.js
-// ✅ API Key dari Environment Variable
+// VERSI DENGAN ERROR HANDLING LEBIH BAIK
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -13,27 +13,47 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        // 🔥 Ambil API Key dari ENV VAR (AMAN!)
         const API_KEY = process.env.QRISLY_API_KEY;
         
         if (!API_KEY) {
-            console.error('❌ QRISLY_API_KEY not configured in environment variables');
+            console.error('❌ QRISLY_API_KEY not configured');
             return {
                 statusCode: 500,
                 headers,
+                body: JSON.stringify({ error: 'QRISLY_API_KEY not configured' })
+            };
+        }
+
+        // 🔥 DEBUG: Log raw body
+        console.log('📦 Raw body:', event.body);
+        console.log('📦 Content-Type:', event.headers['content-type']);
+
+        // 🔥 Parse JSON dengan try-catch
+        let requestData;
+        try {
+            requestData = JSON.parse(event.body);
+        } catch (parseError) {
+            console.error('❌ JSON Parse Error:', parseError);
+            console.error('❌ Raw body:', event.body);
+            return {
+                statusCode: 400,
+                headers,
                 body: JSON.stringify({ 
-                    error: 'QRISLY_API_KEY not configured. Please set it in Netlify Environment Variables.' 
+                    error: 'Invalid JSON body',
+                    details: parseError.message,
+                    received: event.body?.substring(0, 100)
                 })
             };
         }
 
-        const BASE_URL = 'https://api.collaborator.komerce.id/user';
-        const { amount, qris_id, order_number } = JSON.parse(event.body);
+        const { amount, qris_id, order_number } = requestData;
 
-        console.log('🔄 Generating QRIS for order:', order_number);
+        console.log('🔄 Generating QRIS for order:', order_number || 'unknown');
         console.log('📌 Amount:', amount);
-        console.log('📌 QRIS ID:', qris_id);
+        console.log('📌 QRIS ID:', qris_id || 761);
 
+        const BASE_URL = 'https://api.collaborator.komerce.id/user';
+        
         const response = await fetch(`${BASE_URL}/qris/generate`, {
             method: 'POST',
             headers: {
@@ -41,15 +61,31 @@ exports.handler = async function(event, context) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                qris_id: qris_id || 1,
+                qris_id: qris_id || 761,
                 amount: amount,
                 output_type: 'image',
                 unique_amount: true
             })
         });
 
-        const data = await response.json();
-        
+        const responseText = await response.text();
+        console.log('📥 Raw QRISLY Response:', responseText);
+
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ QRISLY Response Parse Error:', parseError);
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Invalid response from QRISLY',
+                    raw: responseText
+                })
+            };
+        }
+
         if (!response.ok) {
             console.error('❌ QRISLY API Error:', response.status, data);
             return {
@@ -57,32 +93,42 @@ exports.handler = async function(event, context) {
                 headers,
                 body: JSON.stringify({ 
                     error: 'QRISLY API error',
+                    status: response.status,
                     details: data 
                 })
             };
         }
 
-        console.log('✅ QRIS generated successfully, history_id:', data.data?.history_id);
+        // 🔥 Ambil qr_image dari response
+        const qrImage = data?.data?.qr_image || data?.qr_image || data?.data?.qr_string;
+        const historyId = data?.data?.history_id || data?.history_id;
+        const expiredAt = data?.data?.expired_at || data?.expired_at;
+
+        console.log('✅ QRIS generated successfully');
+        console.log('📌 history_id:', historyId);
+        console.log('📌 qr_image ada?', !!qrImage);
 
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 success: true,
-                history_id: data.data?.history_id,
-                qr_image: data.data?.qr_image || data.data?.qr_string,
-                expired_at: data.data?.expired_at,
-                ...data
+                history_id: historyId,
+                qr_image: qrImage,
+                expired_at: expiredAt,
+                data: data.data || data
             })
         };
     } catch (error) {
-        console.error('❌ Error:', error);
+        console.error('❌ Function Error:', error);
+        console.error('❌ Stack:', error.stack);
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
                 error: 'Internal server error',
-                message: error.message 
+                message: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             })
         };
     }
