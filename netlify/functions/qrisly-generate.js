@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-generate.js
-// SESUAI DOKUMENTASI QRISLY
+// ENDPOINT YANG BENAR: /api/v1/qrisly/generate-qris
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -24,9 +24,9 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 SESUAI DOKUMENTASI: Base URL + /user/qris/generate
+        // 🔥 ENDPOINT YANG BENAR SESUAI DOKUMENTASI
         const BASE_URL = 'https://api.collaborator.komerce.id/user';
-        const GENERATE_ENDPOINT = `${BASE_URL}/qris/generate`;
+        const GENERATE_ENDPOINT = `${BASE_URL}/api/v1/qrisly/generate-qris`;
         
         console.log('📌 Endpoint:', GENERATE_ENDPOINT);
 
@@ -43,7 +43,7 @@ exports.handler = async function(event, context) {
 
         const { amount, qris_id, order_number } = requestData;
 
-        console.log('🔄 Generating QRIS...');
+        console.log('🔄 Generating QRIS for order:', order_number || 'unknown');
         console.log('📌 Amount:', amount);
         console.log('📌 QRIS ID:', qris_id || 761);
 
@@ -57,7 +57,7 @@ exports.handler = async function(event, context) {
             body: JSON.stringify({
                 qris_id: qris_id || 761,
                 amount: amount,
-                output_type: 'image',
+                output_type: 'image', // 'image' atau 'string'
                 unique_amount: true
             })
         });
@@ -66,16 +66,15 @@ exports.handler = async function(event, context) {
         console.log('📥 Response status:', response.status);
         console.log('📥 Raw response:', responseText);
 
-        // 🔥 CEK 404 - ENDPOINT TIDAK DITEMUKAN
+        // 🔥 CEK 404
         if (response.status === 404) {
             return {
                 statusCode: 404,
                 headers,
                 body: JSON.stringify({ 
                     error: 'QRISLY endpoint not found',
-                    message: 'The endpoint URL might be incorrect. Please check the documentation.',
                     tried_endpoint: GENERATE_ENDPOINT,
-                    solution: 'Try using the sandbox endpoint or check the API key permissions.'
+                    solution: 'Check if the API key has access to QRISLY feature.'
                 })
             };
         }
@@ -108,9 +107,15 @@ exports.handler = async function(event, context) {
         }
 
         // 🔥 AMBIL DATA SESUAI RESPONSE FORMAT
-        const qrImage = data?.data?.qr_image || data?.qr_image || data?.data?.qr_string;
-        const historyId = data?.data?.history_id || data?.history_id;
-        const expiredAt = data?.data?.expired_at || data?.expired_at;
+        // Response: { success: true, data: { history_id, qris_string, original_amount, final_amount, payment_status, expiry_time } }
+        const qrImage = data?.data?.qris_string || data?.data?.qr_image;
+        const historyId = data?.data?.history_id;
+        const expiredAt = data?.data?.expiry_time;
+        const paymentStatus = data?.data?.payment_status;
+
+        console.log('✅ QRIS generated successfully');
+        console.log('📌 history_id:', historyId);
+        console.log('📌 payment_status:', paymentStatus);
 
         return {
             statusCode: 200,
@@ -120,6 +125,7 @@ exports.handler = async function(event, context) {
                 history_id: historyId,
                 qr_image: qrImage,
                 expired_at: expiredAt,
+                payment_status: paymentStatus,
                 data: data.data || data
             })
         };
