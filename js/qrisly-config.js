@@ -6,6 +6,9 @@ const QRISLY_CONFIG = {
     // 🔥 QRIS ID dari dashboard
     qrisId: 761,
     
+    // 🔥 Environment: 'sandbox' atau 'production'
+    environment: 'sandbox',
+    
     // Konfigurasi
     outputType: 'image',
     uniqueAmount: true,
@@ -15,4 +18,6 @@ const QRISLY_CONFIG = {
 };
 
 window.QRISLY_CONFIG = QRISLY_CONFIG;
-console.log('✅ QRISLY Config loaded with qrisId:', QRISLY_CONFIG.qrisId);
+console.log('✅ QRISLY Config loaded');
+console.log(`📌 Environment: ${QRISLY_CONFIG.environment}`);
+console.log(`📌 QRIS ID: ${QRISLY_CONFIG.qrisId}`);
