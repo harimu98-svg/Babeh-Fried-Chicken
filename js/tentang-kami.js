@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="about-section">
                     <h2><i class="fas fa-phone-alt"></i> Hubungi Kami</h2>
                     <div class="contact-info">
-                        <p><i class="fab fa-whatsapp"></i> <a href="https://wa.me/${window.WA_ADMIN}" target="_blank">${window.WA_ADMIN}</a></p>
+                        <p><a href="https://wa.me/6282121266056" target="_blank"><i class="fab fa-whatsapp"></i> 082121266056</a></p>
                         <p><i class="fas fa-envelope"></i> babeh.friedchicken@gmail.com</p>
                     </div>
                 </div>
