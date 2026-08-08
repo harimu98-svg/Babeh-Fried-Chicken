@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-webhook.js
-// PAKAI SERVICE ROLE KEY
+// PERBAIKI: Ambil qris_history_id dari payload
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -22,8 +22,7 @@ exports.handler = async function(event, context) {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({ 
-                    error: 'Supabase credentials not configured. Please add SUPABASE_SERVICE_ROLE_KEY.',
-                    solution: 'Add SUPABASE_SERVICE_ROLE_KEY to Netlify Environment Variables'
+                    error: 'Supabase credentials not configured'
                 })
             };
         }
@@ -48,25 +47,34 @@ exports.handler = async function(event, context) {
 
         console.log('📌 Event type:', eventType);
 
-        // 🔥 UPDATE ORDER PAKAI SERVICE ROLE KEY
+        // 🔥 AMBIL HISTORY_ID DARI PAYLOAD
+        // Field yang benar: qris_history_id (BUKAN history_id)
+        const historyId = data.qris_history_id || data.history_id || data.transaction_id || data.id;
+
+        if (!historyId) {
+            console.error('❌ No history_id found in payload');
+            console.log('📌 Available fields:', Object.keys(data));
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'No history_id found',
+                    available_fields: Object.keys(data)
+                })
+            };
+        }
+
+        console.log(`📌 history_id: ${historyId}`);
+        console.log(`📌 Payment status: ${data.status || data.payment_status}`);
+
+        // 🔥 UPDATE ORDER
         if (eventType === 'payment.success' || 
             eventType === 'paid' || 
+            data.status === 'success' ||
             data.payment_status === 'paid') {
 
-            const historyId = data.history_id || data.transaction_id || data.id;
+            console.log(`🔄 Updating order with qrisly_history_id: ${historyId}`);
 
-            if (!historyId) {
-                console.error('❌ No history_id found');
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ error: 'No history_id found' })
-                };
-            }
-
-            console.log(`🔄 Updating order with history_id: ${historyId}`);
-
-            // 🔥 UPDATE DENGAN SERVICE ROLE KEY (BYPASS RLS)
             const response = await fetch(
                 `${supabaseUrl}/rest/v1/order_fried_chicken?qrisly_history_id=eq.${historyId}`,
                 {
@@ -86,7 +94,7 @@ exports.handler = async function(event, context) {
             );
 
             if (response.ok) {
-                console.log(`✅ Order updated successfully!`);
+                console.log(`✅ Order with history_id ${historyId} updated successfully!`);
             } else {
                 const errorText = await response.text();
                 console.error('❌ Update failed:', errorText);
@@ -99,34 +107,36 @@ exports.handler = async function(event, context) {
                     })
                 };
             }
-        } else if (eventType === 'payment.expired' || eventType === 'expired') {
-            const historyId = data.history_id || data.transaction_id || data.id;
+        } else if (eventType === 'payment.expired' || data.status === 'expired') {
+            console.log(`🔄 Updating order to EXPIRED for history_id: ${historyId}`);
 
-            if (historyId) {
-                await fetch(
-                    `${supabaseUrl}/rest/v1/order_fried_chicken?qrisly_history_id=eq.${historyId}`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'apikey': supabaseServiceKey,
-                            'Authorization': `Bearer ${supabaseServiceKey}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            payment_status: 'Pembayaran Kadaluarsa',
-                            qrisly_status: 'expired',
-                            updated_at: new Date().toISOString()
-                        })
-                    }
-                );
-                console.log(`✅ Order expired: ${historyId}`);
-            }
+            await fetch(
+                `${supabaseUrl}/rest/v1/order_fried_chicken?qrisly_history_id=eq.${historyId}`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': supabaseServiceKey,
+                        'Authorization': `Bearer ${supabaseServiceKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payment_status: 'Pembayaran Kadaluarsa',
+                        qrisly_status: 'expired',
+                        updated_at: new Date().toISOString()
+                    })
+                }
+            );
+            console.log(`✅ Order expired: ${historyId}`);
         }
 
         return {
             statusCode: 200,
             headers,
-            body: JSON.stringify({ status: 'success' })
+            body: JSON.stringify({ 
+                status: 'success',
+                history_id: historyId,
+                event: eventType
+            })
         };
     } catch (error) {
         console.error('❌ Webhook error:', error);
