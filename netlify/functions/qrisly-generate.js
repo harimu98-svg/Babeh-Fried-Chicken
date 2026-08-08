@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-generate.js
-// PERBAIKI ENDPOINT URL
+// DENGAN BEBERAPA PILIHAN ENDPOINT
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -16,7 +16,6 @@ exports.handler = async function(event, context) {
         const API_KEY = process.env.QRISLY_API_KEY;
         
         if (!API_KEY) {
-            console.error('❌ QRISLY_API_KEY not configured');
             return {
                 statusCode: 500,
                 headers,
@@ -24,11 +23,15 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 ENDPOINT YANG BENAR
-        const BASE_URL = 'https://api.collaborator.komerce.id/user';
-        const GENERATE_ENDPOINT = `${BASE_URL}/qris/generate`; // <-- PERHATIKAN INI!
-        
-        console.log('📌 Endpoint:', GENERATE_ENDPOINT);
+        // 🔥 DAFTAR ENDPOINT YANG MUNGKIN BENAR
+        const endpoints = [
+            'https://api.collaborator.komerce.id/qris/generate',
+            'https://api.collaborator.komerce.id/v1/qris/generate',
+            'https://api.collaborator.komerce.id/user/qris/generate',
+            'https://api.rajaongkir.com/qrisly/generate',
+            'https://api.rajaongkir.com/v1/qrisly/generate',
+            'https://qrisly.rajaongkir.com/api/v1/generate'
+        ];
 
         let requestData;
         try {
@@ -37,83 +40,79 @@ exports.handler = async function(event, context) {
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ 
-                    error: 'Invalid JSON body',
-                    details: parseError.message
-                })
+                body: JSON.stringify({ error: 'Invalid JSON body' })
             };
         }
 
         const { amount, qris_id, order_number } = requestData;
 
-        console.log('🔄 Generating QRIS...');
-        console.log('📌 Amount:', amount);
-        console.log('📌 QRIS ID:', qris_id || 761);
+        // 🔥 COBA SETIAP ENDPOINT
+        let lastError = null;
+        
+        for (const endpoint of endpoints) {
+            console.log(`🔄 Trying endpoint: ${endpoint}`);
+            
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        qris_id: qris_id || 761,
+                        amount: amount,
+                        output_type: 'image',
+                        unique_amount: true
+                    })
+                });
 
-        // 🔥 KIRIM REQUEST KE QRISLY
-        const response = await fetch(GENERATE_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'X-API-Key': API_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                qris_id: qris_id || 761,
-                amount: amount,
-                output_type: 'image',
-                unique_amount: true
-            })
-        });
+                const responseText = await response.text();
+                console.log(`📥 Status: ${response.status} for ${endpoint}`);
+                console.log(`📥 Response: ${responseText.substring(0, 200)}...`);
 
-        const responseText = await response.text();
-        console.log('📥 Response status:', response.status);
-        console.log('📥 Raw response:', responseText);
+                if (response.ok) {
+                    // 🔥 ENDPOINT BERHASIL!
+                    console.log(`✅ Found working endpoint: ${endpoint}`);
+                    
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (parseError) {
+                        continue;
+                    }
 
-        // Coba parse response
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (parseError) {
-            return {
-                statusCode: 500,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'Invalid response from QRISLY',
-                    raw: responseText,
-                    status: response.status
-                })
-            };
+                    const qrImage = data?.data?.qr_image || data?.qr_image || data?.data?.qr_string;
+                    const historyId = data?.data?.history_id || data?.history_id;
+                    const expiredAt = data?.data?.expired_at || data?.expired_at;
+
+                    return {
+                        statusCode: 200,
+                        headers,
+                        body: JSON.stringify({
+                            success: true,
+                            history_id: historyId,
+                            qr_image: qrImage,
+                            expired_at: expiredAt,
+                            data: data.data || data,
+                            endpoint_used: endpoint
+                        })
+                    };
+                }
+            } catch (error) {
+                console.error(`❌ Error with ${endpoint}:`, error.message);
+                lastError = error;
+            }
         }
 
-        if (!response.ok) {
-            return {
-                statusCode: response.status,
-                headers,
-                body: JSON.stringify({ 
-                    error: 'QRISLY API error',
-                    status: response.status,
-                    details: data 
-                })
-            };
-        }
-
-        // 🔥 Ambil data dari response
-        const qrImage = data?.data?.qr_image || data?.qr_image || data?.data?.qr_string;
-        const historyId = data?.data?.history_id || data?.history_id;
-        const expiredAt = data?.data?.expired_at || data?.expired_at;
-
-        console.log('✅ QRIS generated successfully');
-        console.log('📌 history_id:', historyId);
-
+        // 🔥 SEMUA ENDPOINT GAGAL
         return {
-            statusCode: 200,
+            statusCode: 500,
             headers,
-            body: JSON.stringify({
-                success: true,
-                history_id: historyId,
-                qr_image: qrImage,
-                expired_at: expiredAt,
-                data: data.data || data
+            body: JSON.stringify({ 
+                error: 'All QRISLY endpoints failed',
+                message: lastError?.message || 'Unknown error',
+                tried_endpoints: endpoints
             })
         };
     } catch (error) {
