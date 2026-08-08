@@ -13,16 +13,11 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        // 🔥 AMBIL DARI ENVIRONMENT VARIABLES
         const supabaseUrl = process.env.SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-        // 🔥 CEK APAKAH SERVICE ROLE KEY ADA
         if (!supabaseUrl || !supabaseServiceKey) {
             console.error('❌ Supabase credentials not configured');
-            console.error('📌 SUPABASE_URL exists:', !!supabaseUrl);
-            console.error('📌 SUPABASE_SERVICE_ROLE_KEY exists:', !!supabaseServiceKey);
-            
             return {
                 statusCode: 500,
                 headers,
@@ -103,6 +98,28 @@ exports.handler = async function(event, context) {
                         details: errorText
                     })
                 };
+            }
+        } else if (eventType === 'payment.expired' || eventType === 'expired') {
+            const historyId = data.history_id || data.transaction_id || data.id;
+
+            if (historyId) {
+                await fetch(
+                    `${supabaseUrl}/rest/v1/order_fried_chicken?qrisly_history_id=eq.${historyId}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': supabaseServiceKey,
+                            'Authorization': `Bearer ${supabaseServiceKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            payment_status: 'Pembayaran Kadaluarsa',
+                            qrisly_status: 'expired',
+                            updated_at: new Date().toISOString()
+                        })
+                    }
+                );
+                console.log(`✅ Order expired: ${historyId}`);
             }
         }
 
