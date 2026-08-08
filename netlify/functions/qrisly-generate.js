@@ -122,24 +122,22 @@ exports.handler = async function(event, context) {
 
         // 🔥 AMBIL QRIS STRING (untuk sandbox, biasanya berupa string)
         const qrImage = data?.data?.qris_string || data?.data?.qr_image;
-        const historyId = data?.data?.history_id;
-        const expiredAt = data?.data?.expiry_time;
+const historyId = data?.data?.history_id;
+const expiredAt = data?.data?.expiry_time;
 
-        console.log('✅ QRIS generated successfully!');
-        console.log('📌 history_id:', historyId);
-
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                success: true,
-                history_id: historyId,
-                qr_image: qrImage,
-                expired_at: expiredAt,
-                environment: IS_SANDBOX ? 'sandbox' : 'production',
-                data: data.data || data
-            })
-        };
+return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+        success: true,
+        history_id: historyId,
+        qr_image: qrImage, // Ini adalah QRIS string
+        expired_at: expiredAt,
+        is_qris_string: true, // 🔥 Tandai bahwa ini adalah string
+        environment: IS_SANDBOX ? 'sandbox' : 'production',
+        data: data.data || data
+    })
+};
     } catch (error) {
         console.error('❌ Function Error:', error);
         return {
