@@ -3,386 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Babeh Fried Chicken - Ayam Goreng Spesial</title>
-     <!-- Favicon -->
-    <link rel="icon" type="logo/jpeg" href="images/icon.png">
+    <title>Babeh Fried Chicken</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ===== RESET ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; color: #333; }
 
-        /* ===== HEADER ===== */
-        .header { background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 1rem 0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .logo { font-size: 1.8rem; font-weight: bold; cursor: pointer; }
-        .logo span { color: #ffd700; }
-        .nav-menu { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
-        .nav-menu a { color: white; text-decoration: none; font-weight: 500; transition: color 0.3s; font-size: 0.95rem; }
+        /* Header */
+        .header { background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 0.8rem 0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 15px; }
+        .logo-section { flex-shrink: 0; }
+        .logo { display: flex; align-items: center; gap: 10px; cursor: pointer; transition: transform 0.3s; }
+        .logo:hover { transform: scale(1.03); }
+        .logo-image { width: 45px; height: 45px; border-radius: 50%; overflow: hidden; flex-shrink: 0; border: 2px solid #ffd700; box-shadow: 0 2px 8px rgba(255,215,0,0.3); background: white; }
+        .logo-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .logo-text-wrapper { display: flex; flex-direction: column; line-height: 1.2; }
+        .logo-text { color: white; font-size: 1rem; font-weight: 700; }
+        .logo-subtext { color: white; font-size: 0.7rem; font-weight: 400; letter-spacing: 0.3px; }
+        .nav-menu { display: flex; gap: 1.5rem; align-items: center; flex-shrink: 0; }
+        .nav-menu a { color: white; text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: color 0.3s; white-space: nowrap; }
         .nav-menu a:hover { color: #ffd700; }
         .order-cart { position: relative; }
-        .order-cart i { font-size: 1.5rem; }
-        .order-badge { position: absolute; top: -8px; right: -8px; background: #ffd700; color: #333; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none; }
+        .order-cart i { font-size: 1.3rem; }
+        .order-badge { position: absolute; top: -8px; right: -8px; background: #ffd700; color: #333; border-radius: 50%; padding: 2px 6px; font-size: 0.65rem; font-weight: bold; display: none; }
 
-        /* ===== HERO ===== */
-        .hero { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('images/hero-bg.jpg'); background-size: cover; background-position: center; color: white; padding: 80px 20px; text-align: center; }
-        .hero h1 { font-size: 3rem; margin-bottom: 1rem; }
-        .hero p { font-size: 1.2rem; margin-bottom: 2rem; }
+        /* Hero */
+        .hero { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('images/hero-bg.jpg'); background-size: cover; background-position: center; color: white; padding: 60px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .hero p { font-size: 1.1rem; margin-bottom: 2rem; }
 
-        /* ===== BUTTONS ===== */
-        .btn { display: inline-block; padding: 12px 30px; background: #ffd700; color: #333; border: none; border-radius: 30px; font-weight: bold; text-decoration: none; transition: all 0.3s; cursor: pointer; font-size: 1rem; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); }
+        .btn { display: inline-block; padding: 12px 30px; background: #ffd700; color: #333; border: none; border-radius: 30px; font-weight: bold; text-decoration: none; transition: all 0.3s; cursor: pointer; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,215,0,0.4); }
         .btn-primary { background: #dc3545; color: white; }
-        .btn-primary:hover { background: #c82333; box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4); }
+        .btn-primary:hover { background: #c82333; }
 
-        /* ===== SECTIONS ===== */
-        .section { padding: 60px 20px; max-width: 1200px; margin: 0 auto; }
-        .section-title { text-align: center; font-size: 2.5rem; margin-bottom: 3rem; color: #dc3545; }
+        .section { padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
+        .section-title { text-align: center; font-size: 2rem; margin-bottom: 2rem; color: #dc3545; }
         .section-title span { color: #ffd700; }
 
-        /* ===== PRODUCTS ===== */
-        .category-section { margin-bottom: 3rem; }
-        .category-title { font-size: 1.8rem; color: #333; margin-bottom: 1.5rem; border-bottom: 3px solid #ffd700; padding-bottom: 0.5rem; }
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; }
-        .product-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.1); transition: transform 0.3s; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
-        .product-image { width: 100%; height: 200px; object-fit: cover; }
-        .product-image-placeholder { width: 100%; height: 200px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #ccc; }
-        .product-info { padding: 1.5rem; }
-        .product-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
-        .product-description { color: #666; font-size: 0.9rem; margin-bottom: 1rem; min-height: 40px; }
-        .product-price { font-size: 1.3rem; color: #dc3545; font-weight: bold; margin-bottom: 0.5rem; }
-        .product-weight { font-size: 0.8rem; color: #6c757d; margin-bottom: 10px; }
-        .btn-order { width: 100%; padding: 10px; background: #ffd700; color: #333; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        /* Products - 50% lebih kecil */
+        .category-section { margin-bottom: 2rem; }
+        .category-title { font-size: 1.4rem; color: #333; margin-bottom: 1rem; border-bottom: 3px solid #ffd700; padding-bottom: 0.3rem; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+        .product-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.3s; }
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.12); }
+        .product-image { width: 100%; height: 140px; object-fit: cover; }
+        .product-image-placeholder { width: 100%; height: 140px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #ccc; }
+        .product-info { padding: 0.8rem; }
+        .product-name { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.2rem; }
+        .product-description { color: #666; font-size: 0.75rem; margin-bottom: 0.5rem; min-height: 30px; }
+        .product-price { font-size: 1rem; color: #dc3545; font-weight: bold; }
+        .product-weight { font-size: 0.7rem; color: #6c757d; margin-bottom: 0.5rem; }
+        .btn-order { width: 100%; padding: 6px; background: #ffd700; color: #333; border: none; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: background 0.3s; }
         .btn-order:hover { background: #f0c000; }
 
-        /* ===== ORDER FORM ===== */
-        .order-form-container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 3px 15px rgba(0,0,0,0.1); }
-        .order-form-container h3 { color: #dc3545; margin-top: 1.5rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #f0f0f0; }
-        .form-group { margin-bottom: 1.2rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; transition: border-color 0.3s; font-family: inherit; }
+        /* Order Form */
+        .order-form-container { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 3px 15px rgba(0,0,0,0.1); }
+        .order-form-container h3 { color: #dc3545; margin-top: 1.2rem; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid #f0f0f0; font-size: 1.1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.3rem; font-weight: 500; font-size: 0.9rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #dc3545; outline: none; }
-        .form-group textarea { min-height: 80px; resize: vertical; }
-        .form-group small { display: block; margin-top: 5px; color: #6c757d; font-size: 0.85rem; }
+        .form-group textarea { min-height: 60px; resize: vertical; }
+        .form-group small { display: block; margin-top: 3px; color: #6c757d; font-size: 0.75rem; }
 
-        /* ===== ORDER ITEMS ===== */
-        .order-items { margin: 1rem 0; max-height: 300px; overflow-y: auto; }
-        .order-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .order-item:last-child { border-bottom: none; }
+        /* Order Items */
+        .order-items { margin: 0.5rem 0; max-height: 250px; overflow-y: auto; }
+        .order-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
         .item-info { flex: 1; }
         .item-name { font-weight: 500; }
-        .item-price { color: #666; font-size: 0.9rem; }
-        .item-weight { font-size: 0.8rem; color: #6c757d; }
-        .item-controls { display: flex; align-items: center; gap: 8px; }
-        .qty-btn { width: 30px; height: 30px; border: 1px solid #ddd; background: white; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .item-price { color: #666; font-size: 0.8rem; }
+        .item-weight { font-size: 0.7rem; color: #6c757d; display: block; }
+        .item-controls { display: flex; align-items: center; gap: 5px; }
+        .qty-btn { width: 26px; height: 26px; border: 1px solid #ddd; background: white; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         .qty-btn:hover { background: #f0f0f0; border-color: #dc3545; }
-        .item-qty { min-width: 20px; text-align: center; font-weight: 500; }
-        .remove-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1rem; padding: 5px; }
-        .remove-btn:hover { transform: scale(1.2); }
-        .empty-order { text-align: center; padding: 30px 0; color: #6c757d; }
-        .empty-order i { color: #ddd; margin-bottom: 10px; }
-        .empty-order a { color: #dc3545; text-decoration: none; font-weight: 500; }
-        .order-total { text-align: right; font-size: 1.2rem; padding-top: 15px; border-top: 2px solid #f0f0f0; }
-        .order-total span { color: #dc3545; font-weight: bold; }
-        .order-berat { text-align: right; font-size: 0.9rem; color: #6c757d; padding-top: 5px; }
+        .item-qty { min-width: 20px; text-align: center; font-weight: 500; font-size: 0.9rem; }
+        .remove-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-size: 0.9rem; padding: 3px; }
+        .empty-order { text-align: center; padding: 20px 0; color: #6c757d; font-size: 0.9rem; }
+        .empty-order i { color: #ddd; margin-bottom: 8px; }
 
-        /* ===== SEARCH ===== */
+        .order-summary { background: #f8f9fa; padding: 12px 15px; border-radius: 8px; margin: 10px 0; }
+        .order-summary .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.95rem; }
+        .order-summary .row.total { font-weight: bold; font-size: 1.1rem; border-top: 2px solid #ddd; padding-top: 8px; margin-top: 4px; }
+        .order-summary .row.total span { color: #dc3545; }
+
+        /* Search */
         .search-container { position: relative; }
-        #search-destination { width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; transition: border-color 0.3s; }
-        #search-destination:focus { border-color: #dc3545; outline: none; box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1); }
-        #search-destination:disabled { background: #f5f5f5; cursor: not-allowed; }
-
-        .search-results { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 4px; }
+        #search-destination { width: 100%; padding: 8px 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+        #search-destination:focus { border-color: #dc3545; outline: none; }
+        .search-results { display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 6px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
         .search-results.show { display: block !important; }
-        .search-result-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee; transition: background 0.2s; }
+        .search-result-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 0.85rem; }
         .search-result-item:hover { background: #f8f9fa; }
         .search-result-item .result-name { font-weight: 500; display: block; }
-        .search-result-item .result-location { color: #6c757d; font-size: 0.85rem; }
-        .search-result-item .result-badge { display: inline-block; padding: 2px 10px; background: #28a745; color: white; border-radius: 12px; font-size: 0.7rem; margin-top: 4px; }
+        .search-result-item .result-location { color: #6c757d; font-size: 0.75rem; }
+        .search-result-item .result-badge { display: inline-block; padding: 1px 8px; background: #28a745; color: white; border-radius: 10px; font-size: 0.6rem; margin-top: 2px; }
 
-        .selected-location { display: none; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; margin: 10px 0; }
+        .selected-location { display: none; padding: 10px 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; color: #155724; margin: 8px 0; font-size: 0.9rem; }
         .selected-location.show { display: block !important; }
 
-        /* ===== SHIPPING ===== */
-        .shipping-cost-box { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; border: 2px solid #e9ecef; }
-        .shipping-cost-box .cost-amount { font-size: 1.8rem; color: #dc3545; font-weight: bold; }
-        .shipping-cost-box .cost-service { color: #6c757d; font-size: 0.9rem; margin-top: 5px; }
-        #shipping-options { margin-top: 10px; padding: 12px 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; max-height: 200px; overflow-y: auto; }
-        .option-item { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid #f0f0f0; }
-        .option-item:last-child { border-bottom: none; }
-        .option-item.cheapest { background: #f8f9fa; border-radius: 4px; }
+        .shipping-cost-box { background: #f8f9fa; padding: 12px 15px; border-radius: 6px; border: 2px solid #e9ecef; }
+        .shipping-cost-box .cost-amount { font-size: 1.4rem; color: #dc3545; font-weight: bold; }
+        .shipping-cost-box .cost-service { color: #6c757d; font-size: 0.8rem; }
+        #shipping-options { margin-top: 8px; padding: 10px 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef; max-height: 150px; overflow-y: auto; font-size: 0.85rem; }
 
-        /* ===== PAYMENT ===== */
-        .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .payment-method { display: block; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s; }
-        .payment-method:hover { border-color: #dc3545; background: #fff5f5; }
-        .payment-method input[type="radio"] { display: none; }
-        .payment-method.active { border-color: #dc3545; background: #fff5f5; }
-        .payment-info-box { margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center; }
-        .payment-info-box img { max-width: 200px; border-radius: 10px; }
+        /* QRIS Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { color: #dc3545; margin-bottom: 12px; }
+        #qrcode { margin: 0 auto; width: 250px; height: 250px; }
 
-        /* ===== ABOUT ===== */
-        .about-container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 3px 15px rgba(0,0,0,0.1); }
-        .about-header { text-align: center; margin-bottom: 3rem; }
-        .about-divider { width: 100px; height: 3px; background: #ffd700; margin: 1rem auto; }
-        .about-section { margin-bottom: 2rem; }
-        .about-section h2 { color: #dc3545; margin-bottom: 1rem; }
-        .advantages-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-        .advantage-item { text-align: center; padding: 1.5rem; background: #f8f9fa; border-radius: 10px; }
-        .advantage-item i { font-size: 2.5rem; color: #dc3545; margin-bottom: 0.5rem; }
+        /* About */
+        .about-container { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 3px 15px rgba(0,0,0,0.1); }
+        .about-header { text-align: center; margin-bottom: 2rem; }
+        .about-divider { width: 80px; height: 3px; background: #ffd700; margin: 0.5rem auto; }
+        .about-section { margin-bottom: 1.5rem; }
+        .about-section h2 { color: #dc3545; margin-bottom: 0.8rem; font-size: 1.2rem; }
+        .advantages-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+        .advantage-item { text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px; }
+        .advantage-item i { font-size: 2rem; color: #dc3545; margin-bottom: 0.3rem; }
 
-        /* ===== CHAT ===== */
-        .chat-widget { position: fixed; bottom: 30px; right: 30px; z-index: 999; }
-        .chat-toggle { width: 60px; height: 60px; border-radius: 50%; background: #25d366; color: white; border: none; font-size: 2rem; cursor: pointer; box-shadow: 0 3px 15px rgba(37, 211, 102, 0.4); transition: transform 0.3s; }
-        .chat-toggle:hover { transform: scale(1.1); }
-        .chat-box { position: absolute; bottom: 80px; right: 0; width: 350px; background: white; border-radius: 15px; box-shadow: 0 5px 30px rgba(0,0,0,0.2); display: none; overflow: hidden; }
+        /* Chat */
+        .chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
+        .chat-toggle { width: 55px; height: 55px; border-radius: 50%; background: #25d366; color: white; border: none; font-size: 1.8rem; cursor: pointer; box-shadow: 0 3px 15px rgba(37,211,102,0.4); }
+        .chat-toggle:hover { transform: scale(1.05); }
+        .chat-box { position: absolute; bottom: 70px; right: 0; width: 320px; background: white; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); display: none; overflow: hidden; }
         .chat-box.active { display: block; }
-        .chat-header { background: #25d366; color: white; padding: 15px; display: flex; align-items: center; gap: 10px; }
-        .chat-messages { max-height: 250px; padding: 15px; overflow-y: auto; }
-        .quick-messages { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 15px 10px; }
-        .quick-message { padding: 5px 12px; background: #f0f0f0; border: none; border-radius: 15px; font-size: 0.8rem; cursor: pointer; }
+        .chat-header { background: #25d366; color: white; padding: 12px 15px; display: flex; align-items: center; gap: 10px; }
+        .chat-messages { max-height: 200px; padding: 12px; overflow-y: auto; font-size: 0.9rem; }
+        .quick-messages { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 8px; }
+        .quick-message { padding: 4px 10px; background: #f0f0f0; border: none; border-radius: 12px; font-size: 0.7rem; cursor: pointer; }
         .quick-message:hover { background: #e0e0e0; }
-        .chat-input { padding: 10px 15px; border-top: 1px solid #eee; display: flex; gap: 10px; }
-        .chat-input input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; }
-        .chat-input button { background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
+        .chat-input { padding: 8px 12px; border-top: 1px solid #eee; display: flex; gap: 8px; }
+        .chat-input input { flex: 1; padding: 6px 10px; border: 1px solid #ddd; border-radius: 15px; font-size: 0.85rem; }
+        .chat-input button { background: #25d366; color: white; border: none; padding: 6px 12px; border-radius: 15px; cursor: pointer; }
 
-        /* ===== NOTIFICATIONS ===== */
-        .notification { position: fixed; top: 80px; right: 20px; padding: 15px 25px; border-radius: 10px; color: white; z-index: 9999; animation: slideIn 0.3s ease-out; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .notification { position: fixed; top: 70px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 9999; animation: slideIn 0.3s ease-out; max-width: 350px; font-size: 0.9rem; }
         .notification.success { background: #28a745; }
         .notification.error { background: #dc3545; }
         .notification.info { background: #17a2b8; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* ===== ORDER SUCCESS ===== */
-        .order-success { text-align: center; padding: 40px 20px; }
-        .order-success i { color: #28a745; margin-bottom: 20px; }
-        .order-success h2 { color: #28a745; margin-bottom: 10px; }
+        .order-success { text-align: center; padding: 30px 20px; }
+        .order-success i { color: #28a745; margin-bottom: 15px; }
+        .order-success h2 { color: #28a745; margin-bottom: 8px; }
 
-        /* ===== FOOTER ===== */
-        .footer { background: #333; color: white; padding: 2rem 0; margin-top: 3rem; text-align: center; }
+        .footer { background: #333; color: white; padding: 1.5rem 0; margin-top: 2rem; text-align: center; font-size: 0.9rem; }
         .footer a { color: #25d366; text-decoration: none; }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .products-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
-            .payment-methods { grid-template-columns: 1fr; }
-            .chat-box { width: 300px; right: -10px; }
-            .hero h1 { font-size: 2rem; }
+            .header-content { flex-wrap: wrap; }
+            .nav-menu { gap: 0.8rem; }
+            .nav-menu a { font-size: 0.7rem; }
+            .products-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+            .logo-image { width: 35px; height: 35px; }
+            .logo-text { font-size: 0.8rem; }
+            .logo-subtext { font-size: 0.55rem; }
+            .hero h1 { font-size: 1.8rem; }
+            .modal-content { padding: 20px; }
+            #qrcode { width: 200px; height: 200px; }
         }
         @media (max-width: 480px) {
-            .products-grid { grid-template-columns: 1fr 1fr; gap: 0.8rem; }
-            .product-info { padding: 0.8rem; }
-            .logo { font-size: 1.4rem; }
-            .nav-menu a { font-size: 0.75rem; }
-            .section-title { font-size: 1.8rem; }
+            .products-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+            .product-info { padding: 0.5rem; }
+            .product-name { font-size: 0.8rem; }
+            .product-price { font-size: 0.85rem; }
+            .product-image { height: 100px; }
+            .product-image-placeholder { height: 100px; }
+            .btn-order { font-size: 0.7rem; padding: 4px; }
+            .section { padding: 20px 10px; }
+            .order-form-container { padding: 1rem; }
         }
- /* ===== HEADER ===== */
-.header {
-    background: linear-gradient(135deg, #dc3545, #c82333);
-    color: white;
-    padding: 0.8rem 0;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-}
-
-.header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: nowrap; /* 🔥 Mencegah menu turun ke bawah */
-    gap: 15px;
-}
-
-/* ===== LOGO SECTION (KIRI) ===== */
-.logo-section {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0; /* 🔥 Mencegah logo mengecil */
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: transform 0.3s;
-}
-
-.logo:hover {
-    transform: scale(1.03);
-}
-
-/* ===== LOGO IMAGE (BULAT) ===== */
-.logo-image {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 2px solid #ffd700;
-    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-    background: white;
-}
-
-.logo-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-/* ===== LOGO TEXT ===== */
-.logo-text-wrapper {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.4;
-}
-
-.logo-text {
-    color: white;
-    font-size: 1.2rem;
-    font-weight: 800;
-}
-
-.logo-subtext {
-   color: white !important;
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-
-/* ===== NAV MENU (KANAN) ===== */
-.nav-menu {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-    flex-shrink: 0; /* 🔥 Mencegah menu mengecil */
-}
-
-.nav-menu a {
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: color 0.3s;
-    white-space: nowrap; /* 🔥 Mencegah teks menu turun */
-}
-
-.nav-menu a:hover {
-    color: #ffd700;
-}
-
-/* ===== CART ===== */
-.order-cart {
-    position: relative;
-}
-
-.order-cart i {
-    font-size: 1.4rem;
-}
-
-.order-badge {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #ffd700;
-    color: #333;
-    border-radius: 50%;
-    padding: 2px 6px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    display: none;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .header-content {
-        flex-wrap: wrap; /* Izinkan wrap di tablet */
-        gap: 10px;
-    }
-    
-    .logo-image {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .logo-text {
-        font-size: 0.95rem;
-    }
-    
-    .logo-subtext {
-        font-size: 0.65rem;
-    }
-    
-    .nav-menu {
-        gap: 1rem;
-    }
-    
-    .nav-menu a {
-        font-size: 0.8rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .header-content {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .logo-image {
-        width: 35px;
-        height: 35px;
-        border-width: 2px;
-    }
-    
-    .logo-text {
-        font-size: 0.8rem;
-    }
-    
-    .logo-subtext {
-        font-size: 0.55rem;
-    }
-    
-    .nav-menu {
-        gap: 0.7rem;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .nav-menu a {
-        font-size: 0.7rem;
-    }
-}
     </style>
 </head>
 <body>
 
-<!-- ===== HEADER ===== -->
 <header class="header">
     <div class="header-content">
-        <!-- Logo (kiri) -->
         <div class="logo-section">
             <div class="logo" onclick="window.location.href='#'">
-                <div class="logo-image">
-                    <img src="images/logo.jpg" alt="Babeh Fried Chicken">
-                </div>
+                <div class="logo-image"><img src="images/logo.jpg" alt="Babeh Fried Chicken"></div>
                 <div class="logo-text-wrapper">
                     <span class="logo-text">Babeh</span>
                     <span class="logo-subtext">Fried Chicken</span>
                 </div>
             </div>
         </div>
-        
-        <!-- Menu (kanan) -->
         <nav class="nav-menu">
             <a href="#home">Home</a>
             <a href="#produk">Menu</a>
@@ -396,47 +204,45 @@
     </div>
 </header>
 
-<!-- ===== HERO ===== -->
 <section id="home" class="hero">
     <h1>Babeh Fried Chicken</h1>
     <p>Rasa Ayam Goreng yang Bikin Nagih!</p>
     <a href="#order" class="btn">Pesan Sekarang</a>
 </section>
 
-<!-- ===== PRODUCTS ===== -->
 <section id="produk" class="section">
     <h2 class="section-title">Menu <span>Spesial</span></h2>
     <div id="products-container"></div>
 </section>
 
-<!-- ===== ORDER ===== -->
 <section id="order" class="section">
     <h2 class="section-title">Pesan <span>Sekarang</span></h2>
     <div id="order-form-container" class="order-form-container">
         <form id="order-form">
-            <!-- ===== ORDER SUMMARY ===== -->
+            <!-- Order Summary -->
             <h3><i class="fas fa-shopping-cart"></i> Pesanan Anda</h3>
             <div id="order-items" class="order-items">
                 <div class="empty-order">
-                    <i class="fas fa-shopping-cart fa-3x"></i>
+                    <i class="fas fa-shopping-cart fa-2x"></i>
                     <p>Belum ada pesanan</p>
                     <a href="#produk">Lihat Menu</a>
                 </div>
             </div>
-            <div class="order-total">
-                <strong>Total: </strong><span id="order-total">Rp 0</span>
-            </div>
-            <div class="order-berat">
-                <i class="fas fa-weight"></i> Berat: <span id="order-berat">0 g</span>
+            <div class="order-summary">
+                <div class="row"><span>Subtotal</span><span id="order-subtotal">Rp 0</span></div>
+                <div class="row"><span>Ongkir</span><span id="order-shipping">Rp 0</span></div>
+                <div class="row total"><span>Total</span><span id="order-total">Rp 0</span></div>
+                <div style="font-size:0.8rem; color:#6c757d; text-align:right; margin-top:4px;">
+                    <i class="fas fa-weight"></i> Berat: <span id="order-berat">0 g</span>
+                </div>
             </div>
 
-            <!-- Hidden Fields -->
             <input type="hidden" id="order-items-json" name="items">
             <input type="hidden" id="subtotal" name="subtotal" value="0">
             <input type="hidden" id="total-berat" name="total_berat" value="0">
             <input type="hidden" id="shipping-cost" name="shipping_cost" value="0">
 
-            <!-- ===== CUSTOMER INFO ===== -->
+            <!-- Customer Info -->
             <h3><i class="fas fa-user"></i> Data Pemesan</h3>
             <div class="form-group">
                 <label>Nama Lengkap <span style="color:#dc3545;">*</span></label>
@@ -452,34 +258,25 @@
                 <textarea id="customer-address" required placeholder="Jalan, Nomor, RT/RW, Kelurahan, Kecamatan"></textarea>
             </div>
 
-            <!-- ===== SHIPPING ===== -->
+            <!-- Shipping -->
             <h3><i class="fas fa-truck"></i> Pengiriman</h3>
-
-            <!-- Origin Info -->
-            <div class="form-group" style="background:#f8f9fa; padding:12px 15px; border-radius:8px;">
-                <small style="color:#6c757d;">
-                    <i class="fas fa-store"></i> <span id="origin-info">📍 Lokasi toko: Curug, Depok</span>
-                </small>
+            <div class="form-group" style="background:#f8f9fa; padding:8px 12px; border-radius:6px;">
+                <small><i class="fas fa-store"></i> <span id="origin-info">📍 Lokasi toko: Curug, Depok</span></small>
             </div>
 
-            <!-- ===== SEARCH FIELD ===== -->
             <div class="form-group search-container">
                 <label for="search-destination">Cari Kota/Kecamatan Tujuan <span style="color:#dc3545;">*</span></label>
-                <input type="text" id="search-destination" 
-                       placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" 
-                       autocomplete="off">
+                <input type="text" id="search-destination" placeholder="Ketik nama kota atau kecamatan (min. 3 karakter)" autocomplete="off">
                 <div class="search-results" id="search-results"></div>
                 <small>Ketik minimal 3 karakter untuk mulai mencari</small>
             </div>
 
-            <!-- Selected Location -->
             <div class="selected-location" id="selected-location">
                 <i class="fas fa-check-circle"></i>
                 <span id="selected-location-text">Lokasi terpilih</span>
                 <input type="hidden" id="selected-subdistrict" value="">
             </div>
 
-            <!-- Courier Selection -->
             <div class="form-group">
                 <label for="courier-select">Pilih Kurir</label>
                 <select id="courier-select">
@@ -489,99 +286,65 @@
                     <option value="tiki">TIKI</option>
                     <option value="pos">POS Indonesia</option>
                     <option value="anteraja">Anteraja</option>
-                    <option value="ninja">Ninja Express</option>
-                    <option value="wahana">Wahana</option>
-                    <option value="lion">Lion Parcel</option>
-                    <option value="rex">REX</option>
-                    <option value="rpx">RPX</option>
                 </select>
             </div>
 
-            <!-- Shipping Cost -->
             <div class="form-group shipping-cost-box">
                 <label style="font-weight:bold;">Ongkos Kirim</label>
-                <div id="shipping-loader" style="display:none; text-align:center; padding:10px;">
-                    <i class="fas fa-spinner fa-spin"></i> Menghitung ongkir...
-                </div>
+                <div id="shipping-loader" style="display:none;"><i class="fas fa-spinner fa-spin"></i> Menghitung...</div>
                 <div class="cost-amount" id="shipping-cost-display">Rp 0</div>
                 <div class="cost-service" id="shipping-service"></div>
             </div>
+            <div id="shipping-options"><div style="font-size:0.85rem; color:#6c757d;">Pilih kurir untuk melihat ongkir</div></div>
 
-            <div id="shipping-options">
-                <div style="font-size:0.9rem; color:#6c757d;">Pilih kurir untuk melihat ongkir</div>
+            <!-- Total Bayar -->
+            <h3><i class="fas fa-credit-card"></i> Total yang Harus Dibayar</h3>
+            <div style="background:#dc3545; color:white; padding:15px; border-radius:8px; text-align:center; margin:10px 0; font-size:1.8rem; font-weight:bold;">
+                <span id="payment-total">Rp 0</span>
             </div>
 
-            <!-- ===== PAYMENT ===== -->
-            <h3><i class="fas fa-credit-card"></i> Metode Pembayaran</h3>
-            <div class="form-group">
-                <div class="payment-methods">
-                    <label class="payment-method active" id="qris-method">
-                        <input type="radio" name="payment_method" value="QRIS" checked>
-                        <i class="fas fa-qrcode" style="color:#25a3d6;"></i> QRIS
-                    </label>
-                    <label class="payment-method" id="transfer-method">
-                        <input type="radio" name="payment_method" value="TRANSFER">
-                        <i class="fas fa-university" style="color:#28a745;"></i> Transfer BSI
-                    </label>
-                </div>
-            </div>
-
-            <div id="qris-payment" class="payment-info-box">
-                <p>Scan QRIS berikut untuk pembayaran:</p>
-                <img src="images/qris.jpg" alt="QRIS">
-                <p style="margin-top:10px; color:#6c757d;">Total: <strong id="payment-total">Rp 0</strong></p>
-            </div>
-
-            <div id="transfer-payment" class="payment-info-box" style="display:none;">
-                <p>Transfer ke rekening BSI:</p>
-                <p style="font-size:1.2rem; font-weight:bold; color:#28a745;">BSI: 1234567890</p>
-                <p>a.n. Babeh Fried Chicken</p>
-            </div>
-
+            <!-- Catatan -->
             <div class="form-group">
                 <label for="order-notes">Catatan (Opsional)</label>
                 <textarea id="order-notes" placeholder="Catatan tambahan..."></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width:100%; padding:15px; font-size:1.1rem;">
+            <!-- Tombol Pesan -->
+            <div style="text-align:center; margin:15px 0 10px; font-size:0.9rem; color:#6c757d;">
+                <i class="fas fa-info-circle"></i> Buat pesanan dan lanjutkan pembayaran QRIS
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:14px; font-size:1rem;">
                 <i class="fas fa-check"></i> Pesan Sekarang
             </button>
         </form>
     </div>
 </section>
 
-<!-- ===== ABOUT ===== -->
 <section id="tentang-kami" class="section">
     <h2 class="section-title">Tentang <span>Kami</span></h2>
     <div id="about-content"></div>
 </section>
 
-<!-- ===== FOOTER ===== -->
 <footer class="footer">
     <p>&copy; 2024 Babeh Fried Chicken. All rights reserved.</p>
-    <p style="margin-top:10px;">
-        <a href="https://wa.me/6282121266056" target="_blank">
-            <i class="fab fa-whatsapp"></i> 082121266056
-        </a>
-    </p>
+    <p><a href="https://wa.me/6282121266056" target="_blank"><i class="fab fa-whatsapp"></i> 082121266056</a></p>
 </footer>
 
-<!-- ===== CHAT ===== -->
+<!-- QRIS Modal -->
+<div class="modal" id="qris-modal">
+    <div class="modal-content" id="qris-modal-content">
+        <!-- Diisi oleh JavaScript -->
+    </div>
+</div>
+
 <div class="chat-widget">
-    <button class="chat-toggle" onclick="toggleChat()">
-        <i class="fab fa-whatsapp"></i>
-    </button>
+    <button class="chat-toggle" onclick="toggleChat()"><i class="fab fa-whatsapp"></i></button>
     <div class="chat-box" id="chat-box">
-        <div class="chat-header">
-            <i class="fab fa-whatsapp"></i> <strong>Chat Admin</strong>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-            <p>Halo! Ada yang bisa kami bantu?</p>
-        </div>
+        <div class="chat-header"><i class="fab fa-whatsapp"></i> <strong>Chat Admin</strong></div>
+        <div class="chat-messages"><p>Halo! Ada yang bisa kami bantu?</p></div>
         <div class="quick-messages">
             <button class="quick-message" data-message="Halo, saya mau order ayam.">Mau order</button>
             <button class="quick-message" data-message="Saya mau tanya menu.">Tanya menu</button>
-            <button class="quick-message" data-message="Saya mau tanya harga.">Tanya harga</button>
         </div>
         <form id="chat-form" class="chat-input">
             <input type="text" id="chat-message" placeholder="Ketik pesan..." required>
@@ -590,7 +353,6 @@
     </div>
 </div>
 
-<!-- ===== SCRIPTS ===== -->
 <script src="js/supabase-config.js"></script>
 <script src="js/produk-harga.js"></script>
 <script src="js/tentang-kami.js"></script>
@@ -598,22 +360,10 @@
 <script src="js/chat-admin.js"></script>
 
 <script>
-    // Toggle chat
-    function toggleChat() {
-        document.getElementById('chat-box').classList.toggle('active');
-    }
+    function toggleChat() { document.getElementById('chat-box').classList.toggle('active'); }
 
-    // Payment method toggle
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.payment-method').forEach(el => {
-            el.addEventListener('click', function() {
-                document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
-                this.classList.add('active');
-                const isQris = this.querySelector('input').value === 'QRIS';
-                document.getElementById('qris-payment').style.display = isQris ? 'block' : 'none';
-                document.getElementById('transfer-payment').style.display = isQris ? 'none' : 'block';
-            });
-        });
+        window.updateOrderBadge();
     });
 </script>
 </body>
