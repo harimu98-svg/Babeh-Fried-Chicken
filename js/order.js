@@ -526,68 +526,116 @@ function createQRISModal() {
     return modal;
 }
 
+// js/order.js - SHOW QRIS PAYMENT MODAL DENGAN QRCODE.JS
+
 function showQRISPaymentModal(orderData) {
     const modal = createQRISModal();
     const content = modal.querySelector('.qris-modal-content');
     
-    const isQrisString = orderData.qrisly_qr_image && 
-                         !orderData.qrisly_qr_image.startsWith('http') && 
-                         !orderData.qrisly_qr_image.startsWith('data:image');
+    console.log('📦 Order Data:', orderData);
+    console.log('📌 QRIS Image:', orderData.qrisly_qr_image?.substring(0, 50) + '...');
+    
+    // 🔥 Cek apakah qr_image adalah QRIS string
+    const qrData = orderData.qrisly_qr_image;
+    const isQrisString = qrData && typeof qrData === 'string' && 
+                         !qrData.startsWith('http') && 
+                         !qrData.startsWith('data:image') &&
+                         qrData.length > 50;
+    
+    const isSandbox = window.QRISLY_CONFIG?.environment === 'sandbox' || orderData.environment === 'sandbox';
     
     content.innerHTML = `
-        <h3 style="color:#dc3545; margin-bottom:15px;">
-            <i class="fas fa-qrcode"></i> Scan QRIS untuk Membayar
-        </h3>
-        <p style="margin:5px 0;">No. Pesanan: <strong>${orderData.order_number}</strong></p>
-        <p style="margin:5px 0; font-size:1.2rem;">
-            Total: <strong style="color:#dc3545;">Rp ${formatRupiah(orderData.total)}</strong>
-        </p>
-        <div id="qris-container" style="margin:20px 0; padding:15px; background:#f8f9fa; border-radius:10px; display:flex; justify-content:center;">
-            ${isQrisString ? 
-                `<div id="qrcode" style="width:250px; height:250px;"></div>` :
-                `<img src="${orderData.qrisly_qr_image}" style="max-width:100%; border-radius:8px;">`
-            }
+        <div style="position:relative; text-align:center; padding:10px 0;">
+            ${isSandbox ? `
+                <div style="position:absolute; top:-10px; right:-10px; background:#ffc107; color:#333; padding:4px 12px; border-radius:20px; font-size:0.7rem; font-weight:bold; z-index:10;">
+                    ⚠️ SANDBOX
+                </div>
+            ` : ''}
+            <h3 style="color:#dc3545; margin-bottom:15px;">
+                <i class="fas fa-qrcode"></i> Scan QRIS untuk Membayar
+            </h3>
+            <p style="margin:5px 0;">No. Pesanan: <strong>${orderData.order_number}</strong></p>
+            <p style="margin:5px 0; font-size:1.2rem;">
+                Total: <strong style="color:#dc3545;">Rp ${formatRupiah(orderData.total)}</strong>
+            </p>
+            <div id="qris-container" style="margin:20px auto; padding:15px; background:#f8f9fa; border-radius:10px; max-width:300px; min-height:250px; display:flex; align-items:center; justify-content:center;">
+                ${isQrisString ? 
+                    `<div id="qrcode" style="width:250px; height:250px;"></div>` :
+                    `<img src="${qrData || '/images/qris.jpg'}" style="max-width:100%; border-radius:8px;">`
+                }
+            </div>
+            <p style="font-size:0.85rem; color:#6c757d;">
+                ⏰ Kadaluarsa: ${orderData.qrisly_expired_at ? new Date(orderData.qrisly_expired_at).toLocaleString('id-ID') : '15 menit'}
+            </p>
+            <div id="qris-status" style="margin:15px 0; padding:10px; background:#fff3cd; border-radius:8px; color:#856404;">
+                ⏳ Menunggu pembayaran...
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button onclick="closeQRISModal()" class="btn btn-secondary" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:8px; cursor:pointer;">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+                <button onclick="manualCheckPayment('${orderData.order_number}')" class="btn btn-primary" style="padding:8px 20px; background:#dc3545; color:white; border:none; border-radius:8px; cursor:pointer;">
+                    <i class="fas fa-sync"></i> Cek Status
+                </button>
+            </div>
+            ${isSandbox ? `
+                <p style="font-size:0.7rem; color:#ffc107; margin-top:10px;">
+                    ⚠️ Sandbox Mode - Testing Only (Tidak ada transaksi nyata)
+                </p>
+            ` : ''}
+            <p style="font-size:0.75rem; color:#6c757d; margin-top:10px;">
+                Pembayaran akan otomatis terverifikasi setelah transfer
+            </p>
         </div>
-        <p style="font-size:0.85rem; color:#6c757d;">
-            ⏰ Kadaluarsa: ${orderData.qrisly_expired_at ? new Date(orderData.qrisly_expired_at).toLocaleString('id-ID') : '15 menit'}
-        </p>
-        <div id="qris-status" style="margin:15px 0; padding:10px; background:#fff3cd; border-radius:8px; color:#856404;">
-            ⏳ Menunggu pembayaran...
-        </div>
-        <div style="display:flex; gap:10px; justify-content:center;">
-            <button onclick="closeQRISModal()" class="btn btn-secondary" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:8px; cursor:pointer;">
-                <i class="fas fa-times"></i> Tutup
-            </button>
-            <button onclick="manualCheckPayment('${orderData.order_number}')" class="btn btn-primary" style="padding:8px 20px; background:#dc3545; color:white; border:none; border-radius:8px; cursor:pointer;">
-                <i class="fas fa-sync"></i> Cek Status
-            </button>
-        </div>
-        <p style="font-size:0.75rem; color:#6c757d; margin-top:15px;">
-            Pembayaran akan otomatis terverifikasi setelah transfer
-        </p>
     `;
     
     modal.style.display = 'flex';
     
     // 🔥 Generate QR Code jika QRIS string
     if (isQrisString) {
+        // Tunggu DOM selesai di-render
         setTimeout(() => {
             const container = document.getElementById('qrcode');
-            if (container && typeof QRCode !== 'undefined') {
-                new QRCode(container, {
-                    text: orderData.qrisly_qr_image,
-                    width: 250,
-                    height: 250,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-                console.log('✅ QR Code generated from QRIS string');
+            if (container) {
+                try {
+                    // Hapus konten sebelumnya jika ada
+                    container.innerHTML = '';
+                    
+                    // 🔥 GENERATE QR CODE DENGAN QRCODE.JS
+                    const qrCode = new QRCode(container, {
+                        text: qrData,
+                        width: 250,
+                        height: 250,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H // High error correction
+                    });
+                    
+                    console.log('✅ QR Code generated successfully!');
+                    console.log('📌 QR Code text length:', qrData.length);
+                } catch (error) {
+                    console.error('❌ QRCode.js error:', error);
+                    // 🔥 FALLBACK: Gunakan Google Chart API
+                    console.log('🔄 Fallback ke Google Chart API...');
+                    const fallbackImg = document.createElement('img');
+                    fallbackImg.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
+                    fallbackImg.style.cssText = 'max-width:100%; border-radius:8px;';
+                    fallbackImg.alt = 'QRIS Payment';
+                    
+                    const containerDiv = document.getElementById('qris-container');
+                    if (containerDiv) {
+                        containerDiv.innerHTML = '';
+                        containerDiv.appendChild(fallbackImg);
+                    }
+                }
             } else {
-                // Fallback ke Google Chart
+                console.error('❌ QRCode container not found!');
+                // 🔥 FALLBACK: Gunakan Google Chart API
                 const fallbackImg = document.createElement('img');
-                fallbackImg.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(orderData.qrisly_qr_image)}&chs=300x300&choe=UTF-8`;
+                fallbackImg.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
                 fallbackImg.style.cssText = 'max-width:100%; border-radius:8px;';
+                fallbackImg.alt = 'QRIS Payment';
+                
                 const containerDiv = document.getElementById('qris-container');
                 if (containerDiv) {
                     containerDiv.innerHTML = '';
@@ -597,6 +645,7 @@ function showQRISPaymentModal(orderData) {
         }, 100);
     }
     
+    // Mulai polling status jika ada history_id
     if (orderData.qrisly_history_id) {
         startPaymentPolling(orderData.qrisly_history_id, orderData.order_number);
     }
