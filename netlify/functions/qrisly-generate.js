@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-generate.js
-// PERBAIKI BASE URL DAN ENDPOINT
+// PERBAIKI ENDPOINT URL
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -24,10 +24,9 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 PASTIKAN URL BENAR
-        // ENDPOINT: https://api.collaborator.komerce.id/user/qris/generate
+        // 🔥 ENDPOINT YANG BENAR
         const BASE_URL = 'https://api.collaborator.komerce.id/user';
-        const GENERATE_ENDPOINT = `${BASE_URL}/qris/generate`;
+        const GENERATE_ENDPOINT = `${BASE_URL}/qris/generate`; // <-- PERHATIKAN INI!
         
         console.log('📌 Endpoint:', GENERATE_ENDPOINT);
 
@@ -47,11 +46,11 @@ exports.handler = async function(event, context) {
 
         const { amount, qris_id, order_number } = requestData;
 
-        console.log('🔄 Generating QRIS for order:', order_number || 'unknown');
+        console.log('🔄 Generating QRIS...');
         console.log('📌 Amount:', amount);
         console.log('📌 QRIS ID:', qris_id || 761);
 
-        // 🔥 REQUEST KE QRISLY
+        // 🔥 KIRIM REQUEST KE QRISLY
         const response = await fetch(GENERATE_ENDPOINT, {
             method: 'POST',
             headers: {
