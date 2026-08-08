@@ -1,4 +1,6 @@
 // netlify/functions/qrisly-status.js
+// DENGAN ENDPOINT YANG BENAR
+
 exports.handler = async function(event, context) {
     const headers = {
         'Access-Control-Allow-Origin': '*',
@@ -31,11 +33,13 @@ exports.handler = async function(event, context) {
             };
         }
 
-        console.log(`🔄 Checking status for history_id: ${historyId}`);
+        console.log(`🔄 Checking payment status for history_id: ${historyId}`);
 
-        // 🔥 Coba sandbox dulu
+        // 🔥 ENDPOINT YANG BENAR: /api/v1/qrisly/payment-status/{history_id}
         const BASE_URL = 'https://api-sandbox.collaborator.komerce.id/user';
-        const statusEndpoint = `${BASE_URL}/api/v1/qrisly/status/${historyId}`;
+        const statusEndpoint = `${BASE_URL}/api/v1/qrisly/payment-status/${historyId}`;
+
+        console.log(`📌 Endpoint: ${statusEndpoint}`);
 
         const response = await fetch(statusEndpoint, {
             method: 'GET',
@@ -46,12 +50,12 @@ exports.handler = async function(event, context) {
         });
 
         const responseText = await response.text();
-        console.log(`📥 Response (${response.status}):`, responseText.substring(0, 200));
+        console.log(`📥 Response (${response.status}):`, responseText.substring(0, 300));
 
         if (!response.ok) {
             // 🔥 Jika sandbox gagal, coba production
             console.log('🔄 Sandbox failed, trying production...');
-            const prodEndpoint = `https://api.collaborator.komerce.id/user/api/v1/qrisly/status/${historyId}`;
+            const prodEndpoint = `https://api.collaborator.komerce.id/user/api/v1/qrisly/payment-status/${historyId}`;
             
             const prodResponse = await fetch(prodEndpoint, {
                 method: 'GET',
@@ -62,6 +66,7 @@ exports.handler = async function(event, context) {
             });
             
             const prodText = await prodResponse.text();
+            console.log(`📥 Production response (${prodResponse.status}):`, prodText.substring(0, 300));
 
             if (prodResponse.ok) {
                 let data;
@@ -76,7 +81,8 @@ exports.handler = async function(event, context) {
                     body: JSON.stringify({
                         success: true,
                         environment: 'production',
-                        data: data.data || data
+                        data: data.data || data,
+                        meta: data.meta || null
                     })
                 };
             }
@@ -96,10 +102,19 @@ exports.handler = async function(event, context) {
         try {
             data = JSON.parse(responseText);
         } catch (e) {
-            data = { raw: responseText };
+            console.error('❌ JSON Parse Error:', e);
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ 
+                    error: 'Invalid JSON response',
+                    raw: responseText
+                })
+            };
         }
 
         console.log('✅ Status check successful');
+        console.log(`📌 Payment status: ${data.data?.payment_status || 'unknown'}`);
 
         return {
             statusCode: 200,
@@ -107,6 +122,7 @@ exports.handler = async function(event, context) {
             body: JSON.stringify({
                 success: true,
                 environment: 'sandbox',
+                meta: data.meta || null,
                 data: data.data || data
             })
         };
