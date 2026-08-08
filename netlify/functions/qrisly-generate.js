@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-generate.js
-// ENDPOINT YANG BENAR: /api/v1/qrisly/generate-qris
+// MENGGUNAKAN SANDBOX ENVIRONMENT
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -24,10 +24,15 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 ENDPOINT YANG BENAR SESUAI DOKUMENTASI
-        const BASE_URL = 'https://api.collaborator.komerce.id/user';
+        // 🔥 PAKAI SANDBOX ENVIRONMENT
+        const IS_SANDBOX = true; // Set ke true untuk sandbox, false untuk production
+        const BASE_URL = IS_SANDBOX 
+            ? 'https://api-sandbox.collaborator.komerce.id/user'
+            : 'https://api.collaborator.komerce.id/user';
+        
         const GENERATE_ENDPOINT = `${BASE_URL}/api/v1/qrisly/generate-qris`;
         
+        console.log(`📌 Environment: ${IS_SANDBOX ? 'SANDBOX' : 'PRODUCTION'}`);
         console.log('📌 Endpoint:', GENERATE_ENDPOINT);
 
         let requestData;
@@ -43,38 +48,47 @@ exports.handler = async function(event, context) {
 
         const { amount, qris_id, order_number } = requestData;
 
-        console.log('🔄 Generating QRIS for order:', order_number || 'unknown');
+        console.log('🔄 Generating QRIS...');
         console.log('📌 Amount:', amount);
         console.log('📌 QRIS ID:', qris_id || 761);
 
-        // 🔥 REQUEST SESUAI DOKUMENTASI
+        const requestBody = {
+            qris_id: qris_id || 761,
+            amount: amount,
+            output_type: 'image',
+            unique_amount: true
+        };
+
         const response = await fetch(GENERATE_ENDPOINT, {
             method: 'POST',
             headers: {
                 'X-API-Key': API_KEY,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                qris_id: qris_id || 761,
-                amount: amount,
-                output_type: 'image', // 'image' atau 'string'
-                unique_amount: true
-            })
+            body: JSON.stringify(requestBody)
         });
 
         const responseText = await response.text();
         console.log('📥 Response status:', response.status);
         console.log('📥 Raw response:', responseText);
 
-        // 🔥 CEK 404
-        if (response.status === 404) {
+        if (response.status === 403 || response.status === 401) {
+            let errorData;
+            try {
+                errorData = JSON.parse(responseText);
+            } catch (e) {
+                errorData = { raw: responseText };
+            }
+            
             return {
-                statusCode: 404,
+                statusCode: response.status,
                 headers,
                 body: JSON.stringify({ 
-                    error: 'QRISLY endpoint not found',
-                    tried_endpoint: GENERATE_ENDPOINT,
-                    solution: 'Check if the API key has access to QRISLY feature.'
+                    error: 'QRISLY API Access Denied',
+                    message: errorData?.meta?.message || 'Please check your API key and permissions',
+                    solution: 'Make sure you are using the correct environment (Sandbox/Production)',
+                    details: errorData,
+                    environment: IS_SANDBOX ? 'sandbox' : 'production'
                 })
             };
         }
@@ -106,16 +120,13 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 AMBIL DATA SESUAI RESPONSE FORMAT
-        // Response: { success: true, data: { history_id, qris_string, original_amount, final_amount, payment_status, expiry_time } }
+        // 🔥 AMBIL QRIS STRING (untuk sandbox, biasanya berupa string)
         const qrImage = data?.data?.qris_string || data?.data?.qr_image;
         const historyId = data?.data?.history_id;
         const expiredAt = data?.data?.expiry_time;
-        const paymentStatus = data?.data?.payment_status;
 
-        console.log('✅ QRIS generated successfully');
+        console.log('✅ QRIS generated successfully!');
         console.log('📌 history_id:', historyId);
-        console.log('📌 payment_status:', paymentStatus);
 
         return {
             statusCode: 200,
@@ -125,7 +136,7 @@ exports.handler = async function(event, context) {
                 history_id: historyId,
                 qr_image: qrImage,
                 expired_at: expiredAt,
-                payment_status: paymentStatus,
+                environment: IS_SANDBOX ? 'sandbox' : 'production',
                 data: data.data || data
             })
         };
