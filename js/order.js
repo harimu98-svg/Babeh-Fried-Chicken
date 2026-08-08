@@ -573,47 +573,79 @@ function closeQRISModal() {
 // POLLING PAYMENT STATUS
 // ============================================
 function startPaymentPolling(historyId, orderNumber) {
-    if (paymentPollingInterval) { clearInterval(paymentPollingInterval); paymentPollingInterval = null; }
+    if (paymentPollingInterval) { 
+        clearInterval(paymentPollingInterval); 
+        paymentPollingInterval = null; 
+    }
+    
     let attempts = 0;
     const maxAttempts = 30;
+    
     paymentPollingInterval = setInterval(async () => {
         attempts++;
+        console.log(`🔄 Polling attempt ${attempts} for history_id: ${historyId}`);
+        
         try {
+            // 🔥 Panggil fungsi status
             const response = await fetch(`/.netlify/functions/qrisly-status?history_id=${historyId}`);
             const result = await response.json();
-            const status = result.data?.payment_status || result.status || 'unpaid';
-            const statusElement = document.getElementById('qris-status');
             
-            if (status === 'paid' || status === 'success') {
+            console.log('📊 Status result:', result);
+            
+            const statusElement = document.getElementById('qris-status');
+            const paymentStatus = result.data?.payment_status || result.data?.status || 'unknown';
+            
+            if (paymentStatus === 'paid' || paymentStatus === 'success') {
                 clearInterval(paymentPollingInterval);
                 paymentPollingInterval = null;
+                
                 if (statusElement) {
                     statusElement.innerHTML = '✅ Pembayaran Berhasil!';
                     statusElement.style.background = '#d4edda';
                     statusElement.style.color = '#155724';
                 }
+                
+                // 🔥 Update status di Supabase (jika webhook belum update)
                 await updateOrderPaymentStatus(orderNumber, 'paid');
+                
                 showNotification('✅ Pembayaran berhasil!', 'success');
-                setTimeout(() => { closeQRISModal(); showSuccessPage(orderNumber); }, 1500);
-            } else if (status === 'expired') {
+                
+                setTimeout(() => { 
+                    closeQRISModal(); 
+                    showSuccessPage(orderNumber); 
+                }, 1500);
+                
+            } else if (paymentStatus === 'expired') {
                 clearInterval(paymentPollingInterval);
                 paymentPollingInterval = null;
+                
                 if (statusElement) {
                     statusElement.innerHTML = '❌ QRIS Kadaluarsa';
                     statusElement.style.background = '#f8d7da';
                     statusElement.style.color = '#721c24';
                 }
+                
                 await updateOrderPaymentStatus(orderNumber, 'expired');
+                
+            } else {
+                // Masih unpaid
+                if (statusElement) {
+                    statusElement.innerHTML = `⏳ Menunggu pembayaran... (${attempts}/${maxAttempts})`;
+                }
             }
+            
             if (attempts >= maxAttempts) {
                 clearInterval(paymentPollingInterval);
                 paymentPollingInterval = null;
                 if (statusElement) {
-                    statusElement.innerHTML = '⏰ Waktu habis. Cek manual.';
+                    statusElement.innerHTML = '⏰ Waktu habis. Silakan cek manual.';
+                    statusElement.style.background = '#f8d7da';
+                    statusElement.style.color = '#721c24';
                 }
             }
+            
         } catch (error) {
-            console.error('Polling error:', error);
+            console.error('❌ Polling error:', error);
         }
     }, 10000);
 }
