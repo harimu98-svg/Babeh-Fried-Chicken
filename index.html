@@ -178,6 +178,204 @@
             .section { padding: 20px 10px; }
             .order-form-container { padding: 1rem; }
         }
+        /* ===== ABOUT SECTION ===== */
+.about-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+}
+
+.about-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.about-header h1 {
+    font-size: 2rem;
+    color: #dc3545;
+}
+
+.about-divider {
+    width: 100px;
+    height: 3px;
+    background: #ffd700;
+    margin: 0.8rem auto;
+}
+
+.about-section {
+    margin-bottom: 2.5rem;
+}
+
+.about-section h2 {
+    color: #dc3545;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+}
+
+.about-section h2 i {
+    margin-right: 10px;
+}
+
+.about-section p {
+    line-height: 1.8;
+    color: #555;
+}
+
+/* ===== VISI & MISI ===== */
+.vision-mission {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.vision-mission .vision,
+.vision-mission .mission {
+    background: #f8f9fa;
+    padding: 1.5rem 2rem;
+    border-radius: 10px;
+}
+
+.vision-mission h3 {
+    color: #dc3545;
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+}
+
+.vision-mission .vision p {
+    line-height: 1.6;
+    color: #555;
+}
+
+/* 🔥 LIST MISI - BULATAN SEJAJAR */
+.vision-mission .mission ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.vision-mission .mission ul li {
+    padding: 8px 0 8px 32px;
+    position: relative;
+    line-height: 1.6;
+    color: #555;
+    text-align: left;
+}
+
+/* 🔥 BULATAN MERAH */
+.vision-mission .mission ul li::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 14px;
+    width: 10px;
+    height: 10px;
+    background: #dc3545;
+    border-radius: 50%;
+    border: 2px solid #dc3545;
+}
+
+/* ===== KEUNGGULAN ===== */
+.advantages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.advantage-item {
+    text-align: center;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    transition: transform 0.3s;
+}
+
+.advantage-item:hover {
+    transform: translateY(-5px);
+}
+
+.advantage-item i {
+    font-size: 2.5rem;
+    color: #dc3545;
+    margin-bottom: 0.5rem;
+}
+
+.advantage-item h3 {
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 0.3rem;
+}
+
+.advantage-item p {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* ===== KONTAK ===== */
+.contact-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.contact-info p {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.contact-info a {
+    color: #dc3545;
+    text-decoration: none;
+}
+
+.contact-info a:hover {
+    text-decoration: underline;
+}
+
+.contact-info i {
+    color: #dc3545;
+    font-size: 1.2rem;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .vision-mission {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .vision-mission .vision,
+    .vision-mission .mission {
+        padding: 1rem 1.2rem;
+    }
+    
+    .advantages-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8rem;
+    }
+    
+    .about-container {
+        padding: 1rem;
+    }
+    
+    .contact-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .advantages-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .about-header h1 {
+        font-size: 1.5rem;
+    }
+}
     </style>
 </head>
 <body>
