@@ -1,25 +1,18 @@
 // js/qrisly-config.js
-// ⚠️ API Key TIDAK ADA DI SINI! Disimpan di Netlify Environment Variables.
-
 const QRISLY_CONFIG = {
-    // 🔥 JANGAN taruh API Key di sini!
-    // apiKey: 'YOUR_QRISLY_API_KEY', ← HAPUS!
-    
-    // Base URL untuk Netlify Functions (bukan API QRISLY langsung)
+    // Base URL untuk Netlify Functions
     apiBaseUrl: '/.netlify/functions/qrisly',
     
-    // QRIS ID dari upload (boleh di frontend karena bukan rahasia)
-    qrisId: 761, // Ganti setelah upload QRIS berhasil
+    // 🔥 QRIS ID dari dashboard
+    qrisId: 761,
     
-    // Konfigurasi lainnya
+    // Konfigurasi
     outputType: 'image',
     uniqueAmount: true,
     
-    // Webhook URL (untuk referensi, bukan untuk dipanggil dari frontend)
+    // Webhook URL
     webhookUrl: 'https://babehfriedchicken.netlify.app/.netlify/functions/qrisly-webhook'
 };
 
-// Simpan ke global
 window.QRISLY_CONFIG = QRISLY_CONFIG;
-
-console.log('✅ QRISLY Config loaded (without API Key)');
+console.log('✅ QRISLY Config loaded with qrisId:', QRISLY_CONFIG.qrisId);
