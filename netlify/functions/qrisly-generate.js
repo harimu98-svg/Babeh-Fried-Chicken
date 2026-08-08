@@ -1,5 +1,5 @@
 // netlify/functions/qrisly-generate.js
-// VERSI DENGAN ERROR HANDLING LEBIH BAIK
+// PERBAIKI BASE URL DAN ENDPOINT
 
 exports.handler = async function(event, context) {
     const headers = {
@@ -24,24 +24,23 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 DEBUG: Log raw body
-        console.log('📦 Raw body:', event.body);
-        console.log('📦 Content-Type:', event.headers['content-type']);
+        // 🔥 PASTIKAN URL BENAR
+        // ENDPOINT: https://api.collaborator.komerce.id/user/qris/generate
+        const BASE_URL = 'https://api.collaborator.komerce.id/user';
+        const GENERATE_ENDPOINT = `${BASE_URL}/qris/generate`;
+        
+        console.log('📌 Endpoint:', GENERATE_ENDPOINT);
 
-        // 🔥 Parse JSON dengan try-catch
         let requestData;
         try {
             requestData = JSON.parse(event.body);
         } catch (parseError) {
-            console.error('❌ JSON Parse Error:', parseError);
-            console.error('❌ Raw body:', event.body);
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({ 
                     error: 'Invalid JSON body',
-                    details: parseError.message,
-                    received: event.body?.substring(0, 100)
+                    details: parseError.message
                 })
             };
         }
@@ -52,9 +51,8 @@ exports.handler = async function(event, context) {
         console.log('📌 Amount:', amount);
         console.log('📌 QRIS ID:', qris_id || 761);
 
-        const BASE_URL = 'https://api.collaborator.komerce.id/user';
-        
-        const response = await fetch(`${BASE_URL}/qris/generate`, {
+        // 🔥 REQUEST KE QRISLY
+        const response = await fetch(GENERATE_ENDPOINT, {
             method: 'POST',
             headers: {
                 'X-API-Key': API_KEY,
@@ -69,25 +67,26 @@ exports.handler = async function(event, context) {
         });
 
         const responseText = await response.text();
-        console.log('📥 Raw QRISLY Response:', responseText);
+        console.log('📥 Response status:', response.status);
+        console.log('📥 Raw response:', responseText);
 
+        // Coba parse response
         let data;
         try {
             data = JSON.parse(responseText);
         } catch (parseError) {
-            console.error('❌ QRISLY Response Parse Error:', parseError);
             return {
                 statusCode: 500,
                 headers,
                 body: JSON.stringify({ 
                     error: 'Invalid response from QRISLY',
-                    raw: responseText
+                    raw: responseText,
+                    status: response.status
                 })
             };
         }
 
         if (!response.ok) {
-            console.error('❌ QRISLY API Error:', response.status, data);
             return {
                 statusCode: response.status,
                 headers,
@@ -99,14 +98,13 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // 🔥 Ambil qr_image dari response
+        // 🔥 Ambil data dari response
         const qrImage = data?.data?.qr_image || data?.qr_image || data?.data?.qr_string;
         const historyId = data?.data?.history_id || data?.history_id;
         const expiredAt = data?.data?.expired_at || data?.expired_at;
 
         console.log('✅ QRIS generated successfully');
         console.log('📌 history_id:', historyId);
-        console.log('📌 qr_image ada?', !!qrImage);
 
         return {
             statusCode: 200,
@@ -121,14 +119,12 @@ exports.handler = async function(event, context) {
         };
     } catch (error) {
         console.error('❌ Function Error:', error);
-        console.error('❌ Stack:', error.stack);
         return {
             statusCode: 500,
             headers,
             body: JSON.stringify({ 
                 error: 'Internal server error',
-                message: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                message: error.message
             })
         };
     }
