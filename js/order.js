@@ -198,14 +198,31 @@ function setOrigin() {
 // LOAD ORDER ITEMS
 // ============================================
 function loadOrderItems() {
+    // 1. Ambil data dari localStorage
     const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
-    const container = document.getElementById('order-items');
     
-    if (!container) return;
+    // 2. Ambil semua elemen DOM
+    const container = document.getElementById('order-items');
+    const totalContainer = document.getElementById('order-total');
+    const beratContainer = document.getElementById('order-berat');
+    const subtotalContainer = document.getElementById('order-subtotal');
+    const shippingContainer = document.getElementById('order-shipping');
+    const paymentTotal = document.getElementById('payment-total');
 
+    // 3. Jika container tidak ada, hentikan
+    if (!container) {
+        console.warn('⚠️ order-items element not found');
+        return;
+    }
+
+    // 4. Rekalkulasi total dan berat
     order.total_berat = order.items.reduce((sum, item) => sum + ((item.weight || 250) * item.quantity), 0);
     order.total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+    // 5. Ambil ongkir dari hidden input
+    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
+
+    // 6. Jika keranjang kosong
     if (order.items.length === 0) {
         container.innerHTML = `
             <div class="empty-order">
@@ -214,10 +231,19 @@ function loadOrderItems() {
                 <a href="#produk">Lihat Menu</a>
             </div>
         `;
-        updateSummary(0, 0);
+        
+        // 🔥 Update semua elemen ke 0
+        if (subtotalContainer) subtotalContainer.textContent = 'Rp 0';
+        if (shippingContainer) shippingContainer.textContent = 'Rp 0';
+        if (totalContainer) totalContainer.textContent = 'Rp 0';
+        if (beratContainer) beratContainer.textContent = '0 g';
+        if (paymentTotal) paymentTotal.textContent = 'Rp 0';
+        
+        updateHiddenFields(order);
         return;
     }
 
+    // 7. Render setiap item
     let html = '';
     order.items.forEach(item => {
         const weight = item.weight || 250;
@@ -229,7 +255,7 @@ function loadOrderItems() {
                     <span class="item-weight"><i class="fas fa-weight"></i> ${weight}g</span>
                 </div>
                 <div class="item-controls">
-                    <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                    <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">−</button>
                     <span class="item-qty">${item.quantity}</span>
                     <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
                     <button class="remove-btn" onclick="removeItem(${item.id})"><i class="fas fa-trash"></i></button>
@@ -238,11 +264,33 @@ function loadOrderItems() {
         `;
     });
     container.innerHTML = html;
+
+    // 8. 🔥 UPDATE SEMUA ELEMEN (PASTIKAN)
+    const totalWithShipping = order.total + shipping;
     
-    const shipping = parseInt(document.getElementById('shipping-cost')?.value) || 0;
-    updateSummary(order.total, shipping);
+    if (subtotalContainer) subtotalContainer.textContent = `Rp ${formatRupiah(order.total)}`;
+    if (shippingContainer) shippingContainer.textContent = `Rp ${formatRupiah(shipping)}`;
+    if (totalContainer) totalContainer.textContent = `Rp ${formatRupiah(totalWithShipping)}`;
+    if (beratContainer) beratContainer.textContent = `${order.total_berat} g`;
+    if (paymentTotal) paymentTotal.textContent = `Rp ${formatRupiah(totalWithShipping)}`;
+
+    // 9. Update hidden fields
     updateHiddenFields(order);
 }
+
+// ============================================
+// HELPER: UPDATE HIDDEN FIELDS
+// ============================================
+function updateHiddenFields(order) {
+    const itemsJson = document.getElementById('order-items-json');
+    const subtotal = document.getElementById('subtotal');
+    const totalBerat = document.getElementById('total-berat');
+    
+    if (itemsJson) itemsJson.value = JSON.stringify(order.items);
+    if (subtotal) subtotal.value = order.total;
+    if (totalBerat) totalBerat.value = order.total_berat;
+}
+
 
 function updateSummary(subtotal, shipping) {
     const total = subtotal + shipping;
