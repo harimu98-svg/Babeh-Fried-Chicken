@@ -36,7 +36,7 @@ exports.handler = async function(event, context) {
         console.log(`🔄 Checking payment status for history_id: ${historyId}`);
 
         // 🔥 ENDPOINT YANG BENAR: /api/v1/qrisly/payment-status/{history_id}
-        const BASE_URL = 'https://api-sandbox.collaborator.komerce.id/user';
+        const BASE_URL = 'https://api.collaborator.komerce.id/user';
         const statusEndpoint = `${BASE_URL}/api/v1/qrisly/payment-status/${historyId}`;
 
         console.log(`📌 Endpoint: ${statusEndpoint}`);
