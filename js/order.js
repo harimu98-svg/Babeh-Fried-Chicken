@@ -598,7 +598,7 @@ function showQRISPaymentModal(orderData) {
                         text: qrData,
                         width: 250, height: 250,
                         colorDark: "#000000", colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
+                        correctLevel: QRCode.CorrectLevel.L
                     });
                     console.log('✅ QR Code generated!');
                 } catch (e) { console.error('QRCode error:', e); }
