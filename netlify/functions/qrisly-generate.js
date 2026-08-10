@@ -72,7 +72,7 @@ exports.handler = async function(event, context) {
                 history_id: historyId,
                 qr_image: qrImage,
                 expired_at: expiredAt,
-                environment: 'sandbox',
+                environment: 'production',
                 data: data.data || data
             })
         };
