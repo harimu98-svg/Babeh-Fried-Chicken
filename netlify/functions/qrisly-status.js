@@ -121,7 +121,7 @@ exports.handler = async function(event, context) {
             headers,
             body: JSON.stringify({
                 success: true,
-                environment: 'sandbox',
+                environment: 'production',
                 meta: data.meta || null,
                 data: data.data || data
             })
