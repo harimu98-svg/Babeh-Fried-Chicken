@@ -2,7 +2,7 @@
 const QRISLY_CONFIG = {
     apiBaseUrl: '/.netlify/functions/qrisly',
     qrisId: 761,
-    environment: 'sandbox',
+    environment: 'production',
     outputType: 'image',
     uniqueAmount: true,
     webhookUrl: 'https://babehfriedchicken.netlify.app/.netlify/functions/qrisly-webhook'
