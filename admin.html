@@ -3,19 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Babeh Fried Chicken</title>
+    <title>Admin Login - Babeh Fried Chicken</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #f1f5f9; min-height: 100vh; }
+
+        /* ===== LOGIN PAGE ===== */
+        .login-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        }
+        .login-page.hidden { display: none; }
+
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.12);
+            border: 1px solid #e2e8f0;
+        }
+        .login-card .logo { text-align: center; margin-bottom: 32px; }
+        .login-card .logo i { font-size: 3rem; color: #f59e0b; }
+        .login-card .logo h1 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-top: 8px; }
+        .login-card .logo span { color: #f59e0b; }
+        .login-card .logo p { color: #94a3b8; font-size: 0.85rem; margin-top: 4px; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 6px; }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .form-group input:focus { border-color: #f59e0b; outline: none; }
+        .form-group input.error { border-color: #ef4444; background: #fef2f2; }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-login:hover { transform: scale(1.02); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.35); }
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 12px;
+            text-align: center;
+            display: none;
+        }
+        .error-msg.show { display: block; }
         
-        /* ===== HEADER ===== */
+        .info-msg {
+            color: #3b82f6;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .info-msg i { margin-right: 6px; }
+
+        /* ===== DASHBOARD ===== */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+        }
+        .dashboard.show { display: block; }
+
         .admin-header {
             background: linear-gradient(135deg, #1e293b, #0f172a);
             color: white;
-            padding: 20px 30px;
+            padding: 16px 30px;
             position: sticky;
             top: 0;
             z-index: 50;
@@ -26,11 +105,25 @@
         .admin-header .logo i { font-size: 1.8rem; color: #f59e0b; }
         .admin-header .logo h1 { font-size: 1.3rem; font-weight: 700; }
         .admin-header .logo span { color: #f59e0b; }
-        .admin-header .header-right { display: flex; align-items: center; gap: 20px; }
+        .admin-header .header-right { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
         .admin-header .header-right .badge-count { background: #ef4444; color: white; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
         .admin-header .header-right .last-update { font-size: 0.75rem; opacity: 0.7; }
-        
-        /* ===== STATS ===== */
+        .admin-header .header-right .admin-email { font-size: 0.8rem; opacity: 0.8; }
+        .btn-logout {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+        /* Stats */
         .stats-grid {
             max-width: 1400px;
             margin: 24px auto 0;
@@ -39,14 +132,7 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
         }
-        .stat-card {
-            background: white;
-            padding: 20px 24px;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            transition: transform 0.2s;
-            border: 1px solid #e2e8f0;
-        }
+        .stat-card { background: white; padding: 20px 24px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; transition: transform 0.2s; }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
         .stat-card .stat-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; }
         .stat-card .stat-number { font-size: 2rem; font-weight: 800; margin: 4px 0; }
@@ -56,8 +142,8 @@
         .stat-card.green .stat-number { color: #22c55e; }
         .stat-card.red .stat-number { color: #ef4444; }
         .stat-card.purple .stat-number { color: #8b5cf6; }
-        
-        /* ===== FILTER ===== */
+
+        /* Filter */
         .filter-bar {
             max-width: 1400px;
             margin: 16px auto 0;
@@ -78,6 +164,7 @@
             font-weight: 500;
             transition: all 0.2s;
             color: #475569;
+            font-family: 'Inter', sans-serif;
         }
         .filter-bar .filter-btn:hover { border-color: #94a3b8; }
         .filter-bar .filter-btn.active { background: #1e293b; color: white; border-color: #1e293b; }
@@ -98,10 +185,11 @@
             outline: none;
             width: 200px;
             font-family: 'Inter', sans-serif;
+            background: transparent;
         }
         .filter-bar .search-box i { color: #94a3b8; }
-        
-        /* ===== ORDER LIST ===== */
+
+        /* Orders */
         .orders-container {
             max-width: 1400px;
             margin: 20px auto 40px;
@@ -115,8 +203,7 @@
         }
         .orders-header h2 { font-size: 1.1rem; font-weight: 600; color: #1e293b; }
         .orders-header .count { font-size: 0.85rem; color: #94a3b8; }
-        
-        /* ===== ORDER CARD ===== */
+
         .order-card {
             background: white;
             border-radius: 16px;
@@ -139,8 +226,8 @@
         .order-card .customer-info .order-id span { color: #1e293b; font-weight: 600; }
         .order-card .customer-info .meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; font-size: 0.8rem; color: #64748b; }
         .order-card .customer-info .meta i { width: 16px; }
-        
-        .order-card .badge-status {
+
+        .badge-status {
             padding: 4px 14px;
             border-radius: 20px;
             font-size: 0.7rem;
@@ -156,10 +243,10 @@
         .badge-status.success { background: #dbeafe; color: #1e40af; }
         .badge-status.cancelled { background: #fee2e2; color: #991b1b; }
         .badge-status.inprocess { background: #e0e7ff; color: #3730a3; }
-        
+
         .order-card .amount { font-weight: 700; font-size: 1.15rem; color: #0f172a; }
         .order-card .amount small { font-weight: 400; font-size: 0.8rem; color: #94a3b8; }
-        
+
         .order-card .card-actions {
             display: flex;
             gap: 8px;
@@ -188,11 +275,9 @@
         .btn-danger:hover { background: #dc2626; transform: scale(1.02); }
         .btn-outline { background: transparent; border: 1px solid #e2e8f0; color: #475569; }
         .btn-outline:hover { background: #f1f5f9; }
-        .btn-outline-primary { background: transparent; border: 1px solid #3b82f6; color: #3b82f6; }
-        .btn-outline-primary:hover { background: #eff6ff; }
         .btn-sm { padding: 5px 12px; font-size: 0.75rem; border-radius: 8px; }
-        
-        /* ===== DETAIL MODAL ===== */
+
+        /* Modal */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -207,7 +292,6 @@
         }
         .modal-overlay.show { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-        
         .modal-content {
             background: white;
             border-radius: 24px;
@@ -228,12 +312,11 @@
             font-size: 1.5rem;
             color: #94a3b8;
             cursor: pointer;
-            transition: color 0.2s;
         }
         .modal-content .modal-close:hover { color: #1e293b; }
         .modal-content .modal-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; color: #0f172a; }
         .modal-content .modal-title i { color: #f59e0b; margin-right: 10px; }
-        
+
         .detail-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -243,8 +326,7 @@
         .detail-item .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; }
         .detail-item .value { font-weight: 500; color: #0f172a; margin-top: 2px; }
         .detail-divider { grid-column: 1 / -1; height: 1px; background: #e2e8f0; margin: 4px 0; }
-        
-        .detail-items { margin-top: 12px; }
+
         .detail-items .item-row {
             display: flex;
             justify-content: space-between;
@@ -253,9 +335,6 @@
             font-size: 0.9rem;
         }
         .detail-items .item-row:last-child { border-bottom: none; }
-        .detail-items .item-row .item-name { font-weight: 500; }
-        .detail-items .item-row .item-qty { color: #64748b; }
-        .detail-items .item-row .item-price { font-weight: 600; color: #0f172a; }
         .detail-total {
             display: flex;
             justify-content: space-between;
@@ -265,19 +344,9 @@
             font-weight: 700;
             font-size: 1.1rem;
         }
-        .detail-total .total-label { color: #475569; }
-        .detail-total .total-value { color: #0f172a; }
-        
-        /* ===== EMPTY STATE ===== */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #94a3b8;
-        }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
         .empty-state i { font-size: 3rem; color: #cbd5e1; margin-bottom: 16px; }
-        .empty-state h3 { font-size: 1.2rem; color: #475569; margin-bottom: 4px; }
-        
-        /* ===== LOADING ===== */
         .loading-state { text-align: center; padding: 60px 20px; }
         .loading-state .spinner {
             width: 40px;
@@ -289,10 +358,9 @@
             margin: 0 auto 16px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* ===== RESPONSIVE ===== */
+
         @media (max-width: 768px) {
-            .admin-header { padding: 16px 20px; }
+            .login-card { padding: 32px 24px; }
             .stats-grid { padding: 0 16px; grid-template-columns: 1fr 1fr; }
             .filter-bar { padding: 0 16px; flex-direction: column; align-items: stretch; }
             .filter-bar .search-box { margin-left: 0; }
@@ -301,90 +369,116 @@
             .order-card { padding: 16px; }
             .detail-grid { grid-template-columns: 1fr; }
             .modal-content { padding: 20px; margin: 10px; }
+            .admin-header { padding: 12px 16px; }
             .admin-header .logo h1 { font-size: 1rem; }
-        }
-        @media (max-width: 480px) {
-            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .stat-card { padding: 14px 16px; }
-            .stat-card .stat-number { font-size: 1.5rem; }
-            .order-card .card-top { flex-direction: column; }
-            .order-card .card-actions { flex-direction: column; }
-            .order-card .card-actions .btn { justify-content: center; }
         }
     </style>
 </head>
 <body>
 
-<!-- ===== HEADER ===== -->
-<header class="admin-header">
-    <div class="container">
+<!-- ===== LOGIN PAGE ===== -->
+<div class="login-page" id="loginPage">
+    <div class="login-card">
         <div class="logo">
             <i class="fas fa-crown"></i>
             <h1>Babeh <span>Admin</span></h1>
+            <p>Login untuk mengelola pesanan</p>
         </div>
-        <div class="header-right">
-            <span class="badge-count" id="headerBadge">0</span>
-            <span class="last-update"><i class="fas fa-sync fa-spin"></i> <span id="lastUpdate">Memuat...</span></span>
-            <a href="/" target="_blank" style="color:white; opacity:0.6; font-size:0.8rem; text-decoration:none;">
-                <i class="fas fa-external-link-alt"></i> Buka Website
-            </a>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="email">Email Admin</label>
+                <input type="email" id="email" value="babeh@gmail.com" placeholder="babeh@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Masukkan password" required>
+            </div>
+            <div id="loginError" class="error-msg"></div>
+            <div id="loginInfo" class="info-msg">
+                <i class="fas fa-info-circle"></i> Hanya email babeh@gmail.com yang diizinkan
+            </div>
+            <button type="submit" class="btn-login" id="loginBtn">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="dashboard" id="dashboard">
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-crown"></i>
+                <h1>Babeh <span>Admin</span></h1>
+            </div>
+            <div class="header-right">
+                <span class="admin-email"><i class="fas fa-user-cog"></i> <span id="adminEmail">babeh@gmail.com</span></span>
+                <span class="badge-count" id="headerBadge">0</span>
+                <span class="last-update"><i class="fas fa-sync fa-spin"></i> <span id="lastUpdate">Memuat...</span></span>
+                <button class="btn-logout" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card blue">
+            <i class="fas fa-clock stat-icon"></i>
+            <div class="stat-label">Menunggu Verifikasi</div>
+            <div class="stat-number" id="statWaiting">0</div>
+            <div class="stat-sub">Perlu tindakan</div>
+        </div>
+        <div class="stat-card green">
+            <i class="fas fa-check-circle stat-icon"></i>
+            <div class="stat-label">Pembayaran Berhasil</div>
+            <div class="stat-number" id="statSuccess">0</div>
+            <div class="stat-sub">Siap diproses</div>
+        </div>
+        <div class="stat-card red">
+            <i class="fas fa-times-circle stat-icon"></i>
+            <div class="stat-label">Dibatalkan</div>
+            <div class="stat-number" id="statCancelled">0</div>
+            <div class="stat-sub">Perlu perhatian</div>
+        </div>
+        <div class="stat-card purple">
+            <i class="fas fa-shopping-bag stat-icon"></i>
+            <div class="stat-label">Total Pesanan</div>
+            <div class="stat-number" id="statTotal">0</div>
+            <div class="stat-sub">Semua waktu</div>
         </div>
     </div>
-</header>
 
-<!-- ===== STATS ===== -->
-<div class="stats-grid" id="statsGrid">
-    <div class="stat-card blue">
-        <i class="fas fa-clock stat-icon"></i>
-        <div class="stat-label">Menunggu Verifikasi</div>
-        <div class="stat-number" id="statWaiting">0</div>
-        <div class="stat-sub">Perlu tindakan</div>
+    <!-- Filter -->
+    <div class="filter-bar">
+        <span class="filter-label"><i class="fas fa-filter"></i> Filter:</span>
+        <button class="filter-btn active" data-filter="all" onclick="applyFilter('all', this)">Semua</button>
+        <button class="filter-btn" data-filter="waiting" onclick="applyFilter('waiting', this)">⏳ Menunggu</button>
+        <button class="filter-btn" data-filter="verified" onclick="applyFilter('verified', this)">✅ Berhasil</button>
+        <button class="filter-btn" data-filter="cancelled" onclick="applyFilter('cancelled', this)">❌ Dibatalkan</button>
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Cari order / customer..." oninput="filterOrders()">
+        </div>
     </div>
-    <div class="stat-card green">
-        <i class="fas fa-check-circle stat-icon"></i>
-        <div class="stat-label">Pembayaran Berhasil</div>
-        <div class="stat-number" id="statSuccess">0</div>
-        <div class="stat-sub">Siap diproses</div>
-    </div>
-    <div class="stat-card red">
-        <i class="fas fa-times-circle stat-icon"></i>
-        <div class="stat-label">Dibatalkan / Kadaluarsa</div>
-        <div class="stat-number" id="statCancelled">0</div>
-        <div class="stat-sub">Perlu perhatian</div>
-    </div>
-    <div class="stat-card purple">
-        <i class="fas fa-shopping-bag stat-icon"></i>
-        <div class="stat-label">Total Pesanan</div>
-        <div class="stat-number" id="statTotal">0</div>
-        <div class="stat-sub">Semua waktu</div>
+
+    <!-- Orders -->
+    <div class="orders-container">
+        <div class="orders-header">
+            <h2><i class="fas fa-list-ul"></i> Daftar Pesanan</h2>
+            <span class="count" id="orderCountDisplay">0 pesanan</span>
+        </div>
+        <div id="ordersList">
+            <div class="loading-state"><div class="spinner"></div><p>Memuat pesanan...</p></div>
+        </div>
     </div>
 </div>
 
-<!-- ===== FILTER ===== -->
-<div class="filter-bar">
-    <span class="filter-label"><i class="fas fa-filter"></i> Filter:</span>
-    <button class="filter-btn active" data-filter="all" onclick="applyFilter('all', this)">Semua</button>
-    <button class="filter-btn" data-filter="waiting" onclick="applyFilter('waiting', this)">⏳ Menunggu</button>
-    <button class="filter-btn" data-filter="verified" onclick="applyFilter('verified', this)">✅ Berhasil</button>
-    <button class="filter-btn" data-filter="cancelled" onclick="applyFilter('cancelled', this)">❌ Dibatalkan</button>
-    <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input type="text" id="searchInput" placeholder="Cari order / customer..." oninput="filterOrders()">
-    </div>
-</div>
-
-<!-- ===== ORDERS ===== -->
-<div class="orders-container">
-    <div class="orders-header">
-        <h2><i class="fas fa-list-ul"></i> Daftar Pesanan</h2>
-        <span class="count" id="orderCountDisplay">0 pesanan</span>
-    </div>
-    <div id="ordersList">
-        <div class="loading-state"><div class="spinner"></div><p>Memuat pesanan...</p></div>
-    </div>
-</div>
-
-<!-- ===== DETAIL MODAL ===== -->
+<!-- ===== MODAL ===== -->
 <div class="modal-overlay" id="detailModal">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal()">&times;</button>
@@ -395,58 +489,135 @@
 
 <script>
 // ============================================
-// 🔥 IIFE - ISOLASI SCOPE
+// 🔥 SUPABASE AUTH
 // ============================================
-(function() {
-    'use strict';
+const SUPABASE_URL = 'https://intzwjmlypmopzauxeqt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImludHp3am1seXBtb3B6YXV4ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MTc5MTIsImV4cCI6MjA3MDI5MzkxMn0.VwwVEDdHtYP5gui4epTcNfLXhPkmfFbRVb5y8mrXJiM';
 
-    // ============================================
-    // KONFIGURASI
-    // ============================================
-    const SUPABASE_URL = 'https://intzwjmlypmopzauxeqt.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImludHp3am1seXBtb3B6YXV4ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MTc5MTIsImV4cCI6MjA3MDI5MzkxMn0.VwwVEDdHtYP5gui4epTcNfLXhPkmfFbRVb5y8mrXJiM';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
-    const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
-    const WAHA_ADMIN_GROUP = '6282121266056@c.us';
+let allOrders = [];
+let currentFilter = 'all';
+let currentUser = null;
 
-    let allOrders = [];
-    let currentFilter = 'all';
-    let supabaseClient;
+// ============================================
+// 🔥 AUTH FUNCTIONS
+// ============================================
 
-    // Inisialisasi Supabase
+// Cek session saat halaman dimuat
+async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        currentUser = session.user;
+        // Cek apakah email yang login adalah babeh@gmail.com
+        if (currentUser.email === 'babeh@gmail.com') {
+            showDashboard();
+            return;
+        } else {
+            // Logout jika email bukan babeh@gmail.com
+            await supabase.auth.signOut();
+            showLogin('❌ Akses ditolak. Hanya babeh@gmail.com yang diizinkan.');
+        }
+    }
+    showLogin();
+}
+
+// Login handler
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('loginBtn');
+    const errorEl = document.getElementById('loginError');
+
+    errorEl.classList.remove('show');
+    errorEl.textContent = '';
+
+    // Validasi email harus babeh@gmail.com
+    if (email !== 'babeh@gmail.com') {
+        errorEl.textContent = '❌ Hanya email babeh@gmail.com yang diizinkan!';
+        errorEl.classList.add('show');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
     try {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch (e) {
-        console.warn('Supabase init:', e);
-    }
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
-    // ============================================
-    // SEND WHATSAPP
-    // ============================================
-    async function sendWhatsAppWAHA(phoneNumber, message) {
-        try {
-            if (!phoneNumber) return false;
-            let formatted = phoneNumber.trim();
-            if (!formatted.includes('@c.us') && !formatted.includes('@g.us')) {
-                formatted = formatted.replace(/^0/, '62').replace(/^\+62/, '62').replace(/[^0-9]/g, '') + '@c.us';
-            }
-            const resp = await fetch(WAHA_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Key': WAHA_API_KEY },
-                body: JSON.stringify({ session: 'Session1', chatId: formatted, text: message })
-            });
-            if (!resp.ok) throw new Error(`WAHA error: ${resp.status}`);
-            console.log('✅ WA sent');
-            return true;
-        } catch (e) { console.error('WA error:', e); return false; }
-    }
+        if (error) throw error;
 
-    function getCustomerMessage(order) {
-        const items = (order.items || []).map(i =>
-            `- ${i.name} x${i.quantity} = Rp ${(i.price * i.quantity).toLocaleString()}`
-        ).join('\n');
-        return `*✅ PEMBAYARAN BERHASIL! Babeh Fried Chicken*
+        currentUser = data.user;
+        showDashboard();
+
+    } catch (error) {
+        errorEl.textContent = '❌ ' + (error.message || 'Login gagal. Periksa email dan password.');
+        errorEl.classList.add('show');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+    }
+}
+
+// Logout
+async function handleLogout() {
+    await supabase.auth.signOut();
+    currentUser = null;
+    showLogin();
+}
+
+// Tampilkan dashboard
+function showDashboard() {
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('show');
+    document.getElementById('adminEmail').textContent = currentUser?.email || 'babeh@gmail.com';
+    loadOrders();
+}
+
+// Tampilkan login
+function showLogin(errorMsg) {
+    document.getElementById('loginPage').classList.remove('hidden');
+    document.getElementById('dashboard').classList.remove('show');
+    if (errorMsg) {
+        const el = document.getElementById('loginError');
+        el.textContent = errorMsg;
+        el.classList.add('show');
+    }
+}
+
+// ============================================
+// 🔥 WHATSAPP & ORDER FUNCTIONS
+// ============================================
+
+const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
+const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
+const WAHA_ADMIN_GROUP = '6282121266056@c.us';
+
+async function sendWhatsAppWAHA(phoneNumber, message) {
+    try {
+        if (!phoneNumber) return false;
+        let formatted = phoneNumber.trim();
+        if (!formatted.includes('@c.us') && !formatted.includes('@g.us')) {
+            formatted = formatted.replace(/^0/, '62').replace(/^\+62/, '62').replace(/[^0-9]/g, '') + '@c.us';
+        }
+        const resp = await fetch(WAHA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Api-Key': WAHA_API_KEY },
+            body: JSON.stringify({ session: 'Session1', chatId: formatted, text: message })
+        });
+        if (!resp.ok) throw new Error(`WAHA error: ${resp.status}`);
+        return true;
+    } catch (e) { console.error('WA error:', e); return false; }
+}
+
+function getCustomerMessage(order) {
+    const items = (order.items || []).map(i =>
+        `- ${i.name} x${i.quantity} = Rp ${(i.price * i.quantity).toLocaleString()}`
+    ).join('\n');
+    return `*✅ PEMBAYARAN BERHASIL! Babeh Fried Chicken*
 
 Halo *${order.customer_name}*,
 
@@ -462,10 +633,10 @@ ${items || 'Tidak ada item'}
 *🍗 Pesanan akan segera diproses dan dikirim!*
 
 Terima kasih! 🙏`;
-    }
+}
 
-    function getAdminMessage(order) {
-        return `*✅ PEMBAYARAN BERHASIL!*
+function getAdminMessage(order) {
+    return `*✅ PEMBAYARAN BERHASIL!*
 
 Pesanan *${order.order_number}* oleh *${order.customer_name}*.
 
@@ -473,297 +644,280 @@ Pesanan *${order.order_number}* oleh *${order.customer_name}*.
 📌 Status: In Process
 
 Segera proses pengiriman. 🚀`;
-    }
+}
 
-    // ============================================
-    // VERIFIKASI
-    // ============================================
-    async function verifyPayment(orderNumber, btn) {
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+async function verifyPayment(orderNumber, btn) {
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
 
-        try {
-            const { data, error } = await supabaseClient
-                .from('order_fried_chicken')
-                .update({
-                    payment_status: 'Pembayaran Berhasil',
-                    status: 'In Process',
-                    payment_verified_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                })
-                .eq('order_number', orderNumber)
-                .select();
+    try {
+        const { data, error } = await supabase
+            .from('order_fried_chicken')
+            .update({
+                payment_status: 'Pembayaran Berhasil',
+                status: 'In Process',
+                payment_verified_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('order_number', orderNumber)
+            .select();
 
-            if (error) throw error;
-            const order = data[0];
-            if (order) {
-                await sendWhatsAppWAHA(order.customer_phone, getCustomerMessage(order));
-                await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, getAdminMessage(order));
-            }
-            alert('✅ Pembayaran berhasil diverifikasi! WA terkirim.');
-            loadOrders();
-        } catch (e) {
-            console.error(e);
-            alert('❌ Gagal: ' + e.message);
+        if (error) throw error;
+        const order = data[0];
+        if (order) {
+            await sendWhatsAppWAHA(order.customer_phone, getCustomerMessage(order));
+            await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, getAdminMessage(order));
         }
-
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Verifikasi'; }
+        alert('✅ Pembayaran berhasil diverifikasi! WA terkirim.');
+        loadOrders();
+    } catch (e) {
+        console.error(e);
+        alert('❌ Gagal: ' + e.message);
     }
 
-    // ============================================
-    // BATAL
-    // ============================================
-    async function cancelOrder(orderNumber, btn) {
-        if (!confirm('Yakin batalkan pesanan ini?')) return;
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Verifikasi'; }
+}
 
-        try {
-            await supabaseClient
-                .from('order_fried_chicken')
-                .update({ payment_status: 'Pembayaran Dibatalkan', status: 'cancelled', updated_at: new Date().toISOString() })
-                .eq('order_number', orderNumber);
-            alert('✅ Pesanan dibatalkan.');
-            loadOrders();
-        } catch (e) {
-            console.error(e);
-            alert('❌ Gagal: ' + e.message);
-        }
+async function cancelOrder(orderNumber, btn) {
+    if (!confirm('Yakin batalkan pesanan ini?')) return;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
 
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-times"></i> Batal'; }
+    try {
+        await supabase
+            .from('order_fried_chicken')
+            .update({ payment_status: 'Pembayaran Dibatalkan', status: 'cancelled', updated_at: new Date().toISOString() })
+            .eq('order_number', orderNumber);
+        alert('✅ Pesanan dibatalkan.');
+        loadOrders();
+    } catch (e) {
+        console.error(e);
+        alert('❌ Gagal: ' + e.message);
     }
 
-    // ============================================
-    // MODAL DETAIL
-    // ============================================
-    function openDetail(orderNumber) {
-        const order = allOrders.find(o => o.order_number === orderNumber);
-        if (!order) return;
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-times"></i> Batal'; }
+}
 
-        const modal = document.getElementById('detailModal');
-        const body = document.getElementById('modalBody');
+function openDetail(orderNumber) {
+    const order = allOrders.find(o => o.order_number === orderNumber);
+    if (!order) return;
 
-        const items = (order.items || []).map(i =>
-            `<div class="item-row">
-                <span class="item-name">${i.name}</span>
-                <span class="item-qty">${i.quantity} x Rp ${(i.price).toLocaleString()}</span>
-                <span class="item-price">Rp ${(i.price * i.quantity).toLocaleString()}</span>
-            </div>`
-        ).join('');
+    const modal = document.getElementById('detailModal');
+    const body = document.getElementById('modalBody');
 
-        const statusMap = {
-            'Menunggu Verifikasi Pembayaran': '⏳ Menunggu Verifikasi',
-            'Pembayaran Berhasil': '✅ Berhasil',
-            'Menunggu Pembayaran': '⏳ Menunggu Pembayaran',
-            'Pembayaran Dibatalkan': '❌ Dibatalkan'
-        };
+    const items = (order.items || []).map(i =>
+        `<div class="item-row">
+            <span class="item-name">${i.name}</span>
+            <span class="item-qty">${i.quantity} x Rp ${(i.price).toLocaleString()}</span>
+            <span class="item-price">Rp ${(i.price * i.quantity).toLocaleString()}</span>
+        </div>`
+    ).join('');
 
-        body.innerHTML = `
-            <div class="detail-grid">
-                <div class="detail-item"><div class="label">Nama Customer</div><div class="value">${order.customer_name || '-'}</div></div>
-                <div class="detail-item"><div class="label">No. WhatsApp</div><div class="value">${order.customer_phone || '-'}</div></div>
-                <div class="detail-item"><div class="label">No. Pesanan</div><div class="value">${order.order_number || '-'}</div></div>
-                <div class="detail-item"><div class="label">Tanggal</div><div class="value">${order.created_at ? new Date(order.created_at).toLocaleString('id-ID') : '-'}</div></div>
-                <div class="detail-item full"><div class="label">Alamat Pengiriman</div><div class="value">${order.customer_address || '-'}</div></div>
-                <div class="detail-item"><div class="label">Status Pembayaran</div><div class="value"><span class="badge-status ${order.payment_status === 'Pembayaran Berhasil' ? 'success' : order.payment_status === 'Menunggu Verifikasi Pembayaran' ? 'waiting' : 'cancelled'}">${statusMap[order.payment_status] || order.payment_status}</span></div></div>
-                <div class="detail-item"><div class="label">Status Order</div><div class="value">${order.status || '-'}</div></div>
-                ${order.shipping_subdistrict ? `<div class="detail-item"><div class="label">Kecamatan Tujuan</div><div class="value">${order.shipping_subdistrict}</div></div>` : ''}
-                ${order.shipping_cost !== undefined ? `<div class="detail-item"><div class="label">Ongkir</div><div class="value">Rp ${(order.shipping_cost || 0).toLocaleString()}</div></div>` : ''}
-                <div class="detail-divider"></div>
-                <div class="detail-item full">
-                    <div class="label">📦 Detail Pesanan</div>
-                    <div class="detail-items">${items || '<div style="color:#94a3b8; font-size:0.85rem;">Tidak ada item</div>'}</div>
-                    <div class="detail-total">
-                        <span class="total-label">Total</span>
-                        <span class="total-value">Rp ${(order.total || 0).toLocaleString()}</span>
+    const statusMap = {
+        'Menunggu Verifikasi Pembayaran': '⏳ Menunggu Verifikasi',
+        'Pembayaran Berhasil': '✅ Berhasil',
+        'Menunggu Pembayaran': '⏳ Menunggu Pembayaran',
+        'Pembayaran Dibatalkan': '❌ Dibatalkan'
+    };
+
+    body.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-item"><div class="label">Nama Customer</div><div class="value">${order.customer_name || '-'}</div></div>
+            <div class="detail-item"><div class="label">No. WhatsApp</div><div class="value">${order.customer_phone || '-'}</div></div>
+            <div class="detail-item"><div class="label">No. Pesanan</div><div class="value">${order.order_number || '-'}</div></div>
+            <div class="detail-item"><div class="label">Tanggal</div><div class="value">${order.created_at ? new Date(order.created_at).toLocaleString('id-ID') : '-'}</div></div>
+            <div class="detail-item full"><div class="label">Alamat Pengiriman</div><div class="value">${order.customer_address || '-'}</div></div>
+            <div class="detail-item"><div class="label">Status Pembayaran</div><div class="value"><span class="badge-status ${order.payment_status === 'Pembayaran Berhasil' ? 'success' : order.payment_status === 'Menunggu Verifikasi Pembayaran' ? 'waiting' : 'cancelled'}">${statusMap[order.payment_status] || order.payment_status}</span></div></div>
+            <div class="detail-item"><div class="label">Status Order</div><div class="value">${order.status || '-'}</div></div>
+            ${order.shipping_subdistrict ? `<div class="detail-item"><div class="label">Kecamatan Tujuan</div><div class="value">${order.shipping_subdistrict}</div></div>` : ''}
+            ${order.shipping_cost !== undefined ? `<div class="detail-item"><div class="label">Ongkir</div><div class="value">Rp ${(order.shipping_cost || 0).toLocaleString()}</div></div>` : ''}
+            <div class="detail-divider"></div>
+            <div class="detail-item full">
+                <div class="label">📦 Detail Pesanan</div>
+                <div class="detail-items">${items || '<div style="color:#94a3b8; font-size:0.85rem;">Tidak ada item</div>'}</div>
+                <div class="detail-total">
+                    <span class="total-label">Total</span>
+                    <span class="total-value">Rp ${(order.total || 0).toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('detailModal').classList.remove('show');
+}
+
+// ============================================
+// LOAD ORDERS
+// ============================================
+async function loadOrders() {
+    const container = document.getElementById('ordersList');
+    container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Memuat pesanan...</p></div>';
+
+    try {
+        const { data, error } = await supabase
+            .from('order_fried_chicken')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        allOrders = data || [];
+
+        const waiting = allOrders.filter(o => o.payment_status === 'Menunggu Verifikasi Pembayaran');
+        const success = allOrders.filter(o => o.payment_status === 'Pembayaran Berhasil');
+        const cancelled = allOrders.filter(o => o.payment_status === 'Pembayaran Dibatalkan' || o.payment_status === 'Pembayaran Kadaluarsa');
+
+        document.getElementById('statWaiting').textContent = waiting.length;
+        document.getElementById('statSuccess').textContent = success.length;
+        document.getElementById('statCancelled').textContent = cancelled.length;
+        document.getElementById('statTotal').textContent = allOrders.length;
+        document.getElementById('headerBadge').textContent = waiting.length;
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('id-ID');
+        document.getElementById('orderCountDisplay').textContent = allOrders.length + ' pesanan';
+
+        applyFilter(currentFilter);
+
+    } catch (e) {
+        console.error('Load error:', e);
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Gagal memuat data</h3><p>${e.message}</p></div>`;
+    }
+}
+
+function applyFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    else document.querySelector('.filter-btn[data-filter="' + filter + '"]')?.classList.add('active');
+    filterOrders();
+}
+
+function filterOrders() {
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+    let filtered = [...allOrders];
+
+    if (currentFilter === 'waiting') filtered = filtered.filter(o => o.payment_status === 'Menunggu Verifikasi Pembayaran');
+    else if (currentFilter === 'verified') filtered = filtered.filter(o => o.payment_status === 'Pembayaran Berhasil');
+    else if (currentFilter === 'cancelled') filtered = filtered.filter(o => o.payment_status === 'Pembayaran Dibatalkan' || o.payment_status === 'Pembayaran Kadaluarsa');
+
+    if (search) {
+        filtered = filtered.filter(o =>
+            (o.order_number || '').toLowerCase().includes(search) ||
+            (o.customer_name || '').toLowerCase().includes(search) ||
+            (o.customer_phone || '').includes(search)
+        );
+    }
+
+    renderOrders(filtered);
+}
+
+function renderOrders(orders) {
+    const container = document.getElementById('ordersList');
+
+    if (!orders || orders.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>Tidak ada pesanan</h3>
+                <p>${currentFilter === 'all' ? 'Belum ada pesanan masuk.' : 'Tidak ada pesanan dengan filter ini.'}</p>
+            </div>
+        `;
+        return;
+    }
+
+    const statusMap = {
+        'Menunggu Verifikasi Pembayaran': { class: 'waiting', label: '⏳ Verifikasi' },
+        'Menunggu Pembayaran': { class: 'waiting', label: '⏳ Menunggu Bayar' },
+        'Pembayaran Berhasil': { class: 'success', label: '✅ Berhasil' },
+        'Pembayaran Dibatalkan': { class: 'cancelled', label: '❌ Batal' },
+        'Pembayaran Kadaluarsa': { class: 'cancelled', label: '⏰ Kadaluarsa' }
+    };
+
+    container.innerHTML = orders.map(order => {
+        const status = statusMap[order.payment_status] || { class: 'waiting', label: order.payment_status };
+        const isWaiting = order.payment_status === 'Menunggu Verifikasi Pembayaran';
+        const isSuccess = order.payment_status === 'Pembayaran Berhasil';
+        const isCancelled = order.payment_status === 'Pembayaran Dibatalkan' || order.payment_status === 'Pembayaran Kadaluarsa';
+
+        return `
+            <div class="order-card" data-order="${order.order_number}">
+                <div class="card-top">
+                    <div class="customer-info">
+                        <div class="name">${order.customer_name}</div>
+                        <div class="order-id">Order: <span>${order.order_number}</span></div>
+                        <div class="meta">
+                            <span><i class="fas fa-phone"></i> ${order.customer_phone}</span>
+                            <span><i class="fas fa-calendar-alt"></i> ${order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID') : '-'}</span>
+                            <span><i class="fas fa-box"></i> ${(order.items || []).length} item</span>
+                        </div>
                     </div>
+                    <div style="text-align:right;">
+                        <div class="amount">Rp ${(order.total || 0).toLocaleString()}</div>
+                        <div class="badge-status ${status.class}">${status.label}</div>
+                        ${order.status ? `<div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">${order.status}</div>` : ''}
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="openDetail('${order.order_number}')">
+                        <i class="fas fa-eye"></i> Detail
+                    </button>
+                    ${isWaiting ? `
+                        <button class="btn btn-success btn-sm" onclick="verifyPayment('${order.order_number}', this)">
+                            <i class="fas fa-check"></i> Verifikasi
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="cancelOrder('${order.order_number}', this)">
+                            <i class="fas fa-times"></i> Batal
+                        </button>
+                    ` : ''}
+                    ${isSuccess ? `
+                        <button class="btn btn-sm" style="background:#d1fae5; color:#065f46;" disabled>
+                            <i class="fas fa-check-circle"></i> Selesai
+                        </button>
+                    ` : ''}
+                    ${isCancelled ? `
+                        <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" disabled>
+                            <i class="fas fa-times-circle"></i> Dibatalkan
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         `;
+    }).join('');
+}
 
-        modal.classList.add('show');
-    }
+// ============================================
+// 🔥 INIT
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    checkSession();
 
-    function closeModal() {
-        document.getElementById('detailModal').classList.remove('show');
-    }
-
-    // ============================================
-    // LOAD ORDERS
-    // ============================================
-    async function loadOrders() {
-        const container = document.getElementById('ordersList');
-        container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Memuat pesanan...</p></div>';
-
-        try {
-            const { data, error } = await supabaseClient
-                .from('order_fried_chicken')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            allOrders = data || [];
-
-            // Update stats
-            const waiting = allOrders.filter(o => o.payment_status === 'Menunggu Verifikasi Pembayaran');
-            const success = allOrders.filter(o => o.payment_status === 'Pembayaran Berhasil');
-            const cancelled = allOrders.filter(o => o.payment_status === 'Pembayaran Dibatalkan' || o.payment_status === 'Pembayaran Kadaluarsa');
-
-            document.getElementById('statWaiting').textContent = waiting.length;
-            document.getElementById('statSuccess').textContent = success.length;
-            document.getElementById('statCancelled').textContent = cancelled.length;
-            document.getElementById('statTotal').textContent = allOrders.length;
-            document.getElementById('headerBadge').textContent = waiting.length;
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('id-ID');
-            document.getElementById('orderCountDisplay').textContent = allOrders.length + ' pesanan';
-
-            applyFilter(currentFilter);
-
-        } catch (e) {
-            console.error('Load error:', e);
-            container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Gagal memuat data</h3><p>${e.message}</p></div>`;
-        }
-    }
-
-    // ============================================
-    // FILTER
-    // ============================================
-    function applyFilter(filter, btn) {
-        currentFilter = filter;
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
-        else document.querySelector('.filter-btn[data-filter="' + filter + '"]')?.classList.add('active');
-        filterOrders();
-    }
-
-    function filterOrders() {
-        const search = document.getElementById('searchInput').value.toLowerCase().trim();
-        let filtered = [...allOrders];
-
-        // Status filter
-        if (currentFilter === 'waiting') filtered = filtered.filter(o => o.payment_status === 'Menunggu Verifikasi Pembayaran');
-        else if (currentFilter === 'verified') filtered = filtered.filter(o => o.payment_status === 'Pembayaran Berhasil');
-        else if (currentFilter === 'cancelled') filtered = filtered.filter(o => o.payment_status === 'Pembayaran Dibatalkan' || o.payment_status === 'Pembayaran Kadaluarsa');
-
-        // Search
-        if (search) {
-            filtered = filtered.filter(o =>
-                (o.order_number || '').toLowerCase().includes(search) ||
-                (o.customer_name || '').toLowerCase().includes(search) ||
-                (o.customer_phone || '').includes(search)
-            );
-        }
-
-        renderOrders(filtered);
-    }
-
-    // ============================================
-    // RENDER
-    // ============================================
-    function renderOrders(orders) {
-        const container = document.getElementById('ordersList');
-
-        if (!orders || orders.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-inbox"></i>
-                    <h3>Tidak ada pesanan</h3>
-                    <p>${currentFilter === 'all' ? 'Belum ada pesanan masuk.' : 'Tidak ada pesanan dengan filter ini.'}</p>
-                </div>
-            `;
-            return;
-        }
-
-        const statusMap = {
-            'Menunggu Verifikasi Pembayaran': { class: 'waiting', label: '⏳ Verifikasi' },
-            'Menunggu Pembayaran': { class: 'waiting', label: '⏳ Menunggu Bayar' },
-            'Pembayaran Berhasil': { class: 'success', label: '✅ Berhasil' },
-            'Pembayaran Dibatalkan': { class: 'cancelled', label: '❌ Batal' },
-            'Pembayaran Kadaluarsa': { class: 'cancelled', label: '⏰ Kadaluarsa' }
-        };
-
-        container.innerHTML = orders.map(order => {
-            const status = statusMap[order.payment_status] || { class: 'waiting', label: order.payment_status };
-            const isWaiting = order.payment_status === 'Menunggu Verifikasi Pembayaran';
-            const isSuccess = order.payment_status === 'Pembayaran Berhasil';
-            const isCancelled = order.payment_status === 'Pembayaran Dibatalkan' || order.payment_status === 'Pembayaran Kadaluarsa';
-
-            return `
-                <div class="order-card" data-order="${order.order_number}">
-                    <div class="card-top">
-                        <div class="customer-info">
-                            <div class="name">${order.customer_name}</div>
-                            <div class="order-id">Order: <span>${order.order_number}</span></div>
-                            <div class="meta">
-                                <span><i class="fas fa-phone"></i> ${order.customer_phone}</span>
-                                <span><i class="fas fa-calendar-alt"></i> ${order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID') : '-'}</span>
-                                <span><i class="fas fa-box"></i> ${(order.items || []).length} item</span>
-                            </div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div class="amount">Rp ${(order.total || 0).toLocaleString()}</div>
-                            <div class="badge-status ${status.class}">${status.label}</div>
-                            ${order.status ? `<div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">${order.status}</div>` : ''}
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-outline btn-sm" onclick="openDetail('${order.order_number}')">
-                            <i class="fas fa-eye"></i> Detail
-                        </button>
-                        ${isWaiting ? `
-                            <button class="btn btn-success btn-sm" onclick="verifyPayment('${order.order_number}', this)">
-                                <i class="fas fa-check"></i> Verifikasi
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="cancelOrder('${order.order_number}', this)">
-                                <i class="fas fa-times"></i> Batal
-                            </button>
-                        ` : ''}
-                        ${isSuccess ? `
-                            <button class="btn btn-sm" style="background:#d1fae5; color:#065f46;" disabled>
-                                <i class="fas fa-check-circle"></i> Selesai
-                            </button>
-                        ` : ''}
-                        ${isCancelled ? `
-                            <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" disabled>
-                                <i class="fas fa-times-circle"></i> Dibatalkan
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // ============================================
-    // EXPOSE KE GLOBAL
-    // ============================================
-    window.loadOrders = loadOrders;
-    window.applyFilter = applyFilter;
-    window.filterOrders = filterOrders;
-    window.verifyPayment = verifyPayment;
-    window.cancelOrder = cancelOrder;
-    window.openDetail = openDetail;
-    window.closeModal = closeModal;
-
-    // ============================================
-    // INIT
-    // ============================================
-    document.addEventListener('DOMContentLoaded', function() {
-        loadOrders();
-        setInterval(loadOrders, 30000);
-
-        // Click outside modal to close
-        document.getElementById('detailModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
-
-        // ESC key to close modal
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
-        });
+    // Click outside modal
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
     });
 
-    console.log('✅ Admin Dashboard loaded!');
-})();
+    // ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    // Auto refresh every 30 seconds (only when logged in)
+    setInterval(() => {
+        if (currentUser) loadOrders();
+    }, 30000);
+});
+
+// ============================================
+// GLOBAL EXPORT (untuk onclick di HTML)
+// ============================================
+window.handleLogin = handleLogin;
+window.handleLogout = handleLogout;
+window.verifyPayment = verifyPayment;
+window.cancelOrder = cancelOrder;
+window.openDetail = openDetail;
+window.closeModal = closeModal;
+window.applyFilter = applyFilter;
+window.filterOrders = filterOrders;
 </script>
 
 </body>
