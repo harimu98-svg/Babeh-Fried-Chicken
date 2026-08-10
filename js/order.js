@@ -16,7 +16,7 @@ const WAHA_ADMIN_GROUP = '6282121266056@c.us';
 // ============================================
 // QRIS TEMPLATE DARI QRISLY (VALID)
 // ============================================
-const QRIS_TEMPLATE = '00020101021126580013ID.NETZME.WWW01189360081401001769850208oOQc4v3U0303UMI51440014ID.CO.QRIS.WWW0215ID10254577823040303UMI5204723053033605802ID5924Babeh Barbershop - Curug6005DEPOK61051651762070703A01';
+const QRIS_TEMPLATE = '00020101021126580013ID.NETZME.WWW01189360081401001769850208oOQc4v3U0303UMI51440014ID.CO.QRIS.WWW0215ID10254577823040303UMI5204723053033605802ID5924Babeh Barbershop - Curug6005DEPOK61051651762070703A0154051000863043E87';
 
 // ============================================
 // QRIS PARSER
@@ -73,43 +73,31 @@ function calculateCRC16(data) {
 // 🔥 GENERATE QRIS DINAMIS
 // ============================================
 function generateDynamicQRIS(amount) {
-    try {
-        // Parse template
-        const tags = parseQRIS(QRIS_TEMPLATE);
-        
-        // 🔥 1. Tambah tag 54 (Amount) - 5 digit
-        tags['54'] = String(amount);
-        
-        // 🔥 2. Hapus CRC lama
-        delete tags['63'];
-        
-        // 🔥 3. Build QRIS tanpa CRC
-        const tempQRIS = buildQRIS(tags);
-        
-        // 🔥 4. Hitung CRC
-        const crc = calculateCRC16(tempQRIS);
-        tags['63'] = crc;
-        
-        // 🔥 5. Build final QRIS
-        const dynamicQRIS = buildQRIS(tags);
-        
-        console.log('✅ QRIS Dinamis generated!');
-        console.log(`📌 Amount: ${amount}`);
-        console.log(`📌 CRC: ${crc}`);
-        console.log(`📌 QRIS Length: ${dynamicQRIS.length}`);
-        
-        return {
-            success: true,
-            qrisString: dynamicQRIS,
-            amount: amount,
-            crc: crc,
-            tags: tags
-        };
-        
-    } catch (error) {
-        console.error('❌ QRIS generate error:', error);
-        return { success: false, error: error.message };
-    }
+    // Parse template LENGKAP
+    const tags = parseQRIS(QRIS_TEMPLATE);
+    
+    // 🔥 Ganti tag 54 (Amount) dengan amount baru
+    tags['54'] = String(amount);
+    
+    // 🔥 Hapus CRC lama
+    delete tags['63'];
+    
+    // 🔥 Build tanpa CRC
+    const tempQRIS = buildQRIS(tags);
+    
+    // 🔥 Hitung CRC baru
+    const crc = calculateCRC16(tempQRIS);
+    tags['63'] = crc;
+    
+    // 🔥 Build final QRIS
+    const dynamicQRIS = buildQRIS(tags);
+    
+    return {
+        success: true,
+        qrisString: dynamicQRIS,
+        amount: amount,
+        crc: crc
+    };
 }
 
 // ============================================
@@ -139,7 +127,7 @@ function verifyQRIS(qrisString) {
 }
 
 // ============================================
-// 🔧 TEST GENERATE QRIS
+// TEST GENERATE
 // ============================================
 function testQRIS(amount) {
     console.log(`🔄 Generating QRIS for Rp ${amount.toLocaleString('id-ID')}...`);
@@ -147,10 +135,11 @@ function testQRIS(amount) {
     
     if (result.success) {
         console.log(`✅ QRIS generated!`);
-        console.log(`📌 QRIS String: ${result.qrisString.substring(0, 50)}...`);
+        console.log(`📌 Amount: ${result.amount}`);
+        console.log(`📌 CRC: ${result.crc}`);
         console.log(`📌 Length: ${result.qrisString.length}`);
+        console.log(`📌 QRIS String: ${result.qrisString.substring(0, 50)}...`);
         
-        // Verifikasi
         verifyQRIS(result.qrisString);
     }
     
