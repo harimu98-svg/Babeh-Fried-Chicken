@@ -7,16 +7,20 @@ const ORIGIN_SUBDISTRICT_ID = '26017';
 const ORIGIN_NAME = 'Curug, Depok, Jawa Barat';
 
 // ============================================
+// KONFIGURASI WAHA WHATSAPP API
+// ============================================
+const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
+const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
+const WAHA_ADMIN_GROUP = '6282121266056@c.us';
+
+// ============================================
 // QRIS TEMPLATE DARI QRISLY (VALID)
 // ============================================
-// 🔥 QRIS template lengkap (tanpa tag 54)
-// Format: 000201... tanpa amount
 const QRIS_TEMPLATE = '00020101021126580013ID.NETZME.WWW01189360081401001769850208oOQc4v3U0303UMI51440014ID.CO.QRIS.WWW0215ID10254577823040303UMI5204723053033605802ID5924Babeh Barbershop - Curug6005DEPOK61051651762070703A01';
 
 // ============================================
-// QRIS PARSER & GENERATOR
+// QRIS PARSER
 // ============================================
-
 function parseQRIS(qrisString) {
     const tags = {};
     let i = 0;
@@ -43,9 +47,13 @@ function buildQRIS(tags) {
     return result;
 }
 
+// ============================================
+// 🔥 CRC16-CCITT (XModem) - YANG BENAR!
+// ============================================
 function calculateCRC16(data) {
     let crc = 0xFFFF;
     const polynomial = 0x1021;
+    
     for (let i = 0; i < data.length; i++) {
         crc ^= data.charCodeAt(i) << 8;
         for (let j = 0; j < 8; j++) {
@@ -57,39 +65,38 @@ function calculateCRC16(data) {
             crc &= 0xFFFF;
         }
     }
+    
     return crc.toString(16).toUpperCase().padStart(4, '0');
 }
 
-/**
- * 🔥 GENERATE QRIS DINAMIS - FORMAT SESUAI QRISLY
- * Amount: 5 digit (contoh: 10000 → '10000')
- */
+// ============================================
+// 🔥 GENERATE QRIS DINAMIS
+// ============================================
 function generateDynamicQRIS(amount) {
     try {
         // Parse template
         const tags = parseQRIS(QRIS_TEMPLATE);
         
-        // 🔥 1. Tambah tag 54 (Amount) - FORMAT 5 DIGIT
-        // Contoh: 10000 → '10000' (bukan '010000')
-        const amountStr = String(amount);
-        tags['54'] = amountStr;
+        // 🔥 1. Tambah tag 54 (Amount) - 5 digit
+        tags['54'] = String(amount);
         
         // 🔥 2. Hapus CRC lama
         delete tags['63'];
         
-        // 🔥 3. Build sementara untuk hitung CRC
+        // 🔥 3. Build QRIS tanpa CRC
         const tempQRIS = buildQRIS(tags);
+        
+        // 🔥 4. Hitung CRC
         const crc = calculateCRC16(tempQRIS);
         tags['63'] = crc;
         
-        // 🔥 4. Build final QRIS
+        // 🔥 5. Build final QRIS
         const dynamicQRIS = buildQRIS(tags);
         
         console.log('✅ QRIS Dinamis generated!');
         console.log(`📌 Amount: ${amount}`);
         console.log(`📌 CRC: ${crc}`);
         console.log(`📌 QRIS Length: ${dynamicQRIS.length}`);
-        console.log(`📌 QRIS String: ${dynamicQRIS.substring(0, 50)}...`);
         
         return {
             success: true,
@@ -106,38 +113,46 @@ function generateDynamicQRIS(amount) {
 }
 
 // ============================================
-// VERIFIKASI QRIS
+// 🔥 VERIFIKASI QRIS
 // ============================================
 function verifyQRIS(qrisString) {
     const tags = parseQRIS(qrisString);
-    const requiredTags = ['59', '54', '58', '63'];
-    const missing = requiredTags.filter(tag => !tags[tag]);
+    const tempTags = { ...tags };
+    delete tempTags['63'];
+    const tempQRIS = buildQRIS(tempTags);
+    const calculatedCRC = calculateCRC16(tempQRIS);
+    const isValid = tags['63'] === calculatedCRC;
     
-    console.log('📌 Tags found:', Object.keys(tags));
-    console.log('📌 Merchant:', tags['59']);
-    console.log('📌 Amount:', tags['54']);
-    console.log('📌 CRC:', tags['63']);
-    console.log('📌 QRIS Valid?', missing.length === 0);
+    console.log('📦 QRIS Verification:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`📌 Merchant: ${tags['59']}`);
+    console.log(`📌 Amount: ${tags['54']}`);
+    console.log(`📌 CRC from QRIS: ${tags['63']}`);
+    console.log(`📌 Calculated CRC: ${calculatedCRC}`);
+    console.log(`📌 QRIS Valid? ${isValid ? '✅ YES' : '❌ NO'}`);
     
     return {
-        valid: missing.length === 0,
+        valid: isValid,
         tags: tags,
-        missing: missing
+        calculatedCRC: calculatedCRC
     };
 }
 
 // ============================================
-// TEST DI CONSOLE
+// 🔧 TEST GENERATE QRIS
 // ============================================
-function testQRIS() {
-    const amount = 10086; // Sama dengan QRISLY
+function testQRIS(amount) {
+    console.log(`🔄 Generating QRIS for Rp ${amount.toLocaleString('id-ID')}...`);
     const result = generateDynamicQRIS(amount);
-    console.log('📦 Result:', result);
-    console.log('📌 QRIS String:', result.qrisString);
-    console.log('📌 Length:', result.qrisString.length);
     
-    // Verifikasi
-    verifyQRIS(result.qrisString);
+    if (result.success) {
+        console.log(`✅ QRIS generated!`);
+        console.log(`📌 QRIS String: ${result.qrisString.substring(0, 50)}...`);
+        console.log(`📌 Length: ${result.qrisString.length}`);
+        
+        // Verifikasi
+        verifyQRIS(result.qrisString);
+    }
     
     return result;
 }
@@ -168,7 +183,6 @@ function showQRISPaymentModal(orderData) {
     const content = document.getElementById('qris-modal-content');
     if (!content) return;
 
-    // 🔥 GENERATE QRIS DINAMIS
     const result = generateDynamicQRIS(orderData.total);
     
     if (!result.success) {
@@ -197,9 +211,7 @@ function showQRISPaymentModal(orderData) {
             <div id="qris-container" style="margin:20px auto; padding:15px; background:#f8f9fa; border-radius:10px; max-width:300px; min-height:250px; display:flex; align-items:center; justify-content:center;">
                 <div id="qrcode" style="width:250px; height:250px; margin:0 auto;"></div>
             </div>
-            <p style="font-size:0.85rem; color:#6c757d;">
-                ⏰ QRIS berlaku 15 menit
-            </p>
+            <p style="font-size:0.85rem; color:#6c757d;">⏰ QRIS berlaku 15 menit</p>
             <div style="margin:15px 0; padding:10px; background:#e8f5e9; border-radius:8px; color:#2e7d32; font-size:0.9rem;">
                 <i class="fas fa-check-circle"></i> Transfer sesuai total pesanan
                 <br>
@@ -221,7 +233,6 @@ function showQRISPaymentModal(orderData) {
 
     modal.style.display = 'flex';
 
-    // Render QR Code
     setTimeout(() => {
         const container = document.getElementById('qrcode');
         if (container) {
@@ -274,12 +285,8 @@ function copyQRISString() {
 }
 
 // ============================================
-// WHATSAPP NOTIFICATIONS
+// WHATSAPP NOTIFICATIONS (WAHA)
 // ============================================
-const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
-const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
-const WAHA_ADMIN_GROUP = '6282121266056@c.us';
-
 async function sendWhatsAppWAHA(phoneNumber, message) {
     try {
         if (!phoneNumber) return false;
@@ -773,3 +780,6 @@ window.submitOrder = submitOrder;
 window.updateOrderBadge = updateOrderBadge;
 window.addToOrder = addToOrder;
 window.copyQRISString = copyQRISString;
+window.testQRIS = testQRIS;
+window.generateDynamicQRIS = generateDynamicQRIS;
+window.verifyQRIS = verifyQRIS;
