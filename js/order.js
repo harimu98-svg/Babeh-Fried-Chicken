@@ -378,178 +378,13 @@ function displayShippingOptions(costs) {
     `;
 }
 
-// js/order.js - QRIS DINAMIS DENGAN STRUKTUR YANG BENAR
-
 // ============================================
-// QRIS TEMPLATE (TANPA AMOUNT & ID INVOICE)
-// ============================================
-// Template dari QRIS Anda (tanpa tag 54, 62, 63)
-const QRIS_TEMPLATE = '00020101021226640017ID.CO.BANKBSI.WWW0118936004510000550572021000001264810303UMI51440014ID.CO.QRIS.WWW0215ID10254166173930303UMI5204723053033605802ID5916BABEH BARBERSHOP6007TANGSEL6105154125';
-
-// ============================================
-// QRIS PARSER & BUILDER
-// ============================================
-function parseQRIS(qrisString) {
-    const tags = {};
-    let i = 0;
-    while (i < qrisString.length) {
-        const tag = qrisString.substring(i, i + 2);
-        i += 2;
-        const length = parseInt(qrisString.substring(i, i + 2));
-        i += 2;
-        const value = qrisString.substring(i, i + length);
-        i += length;
-        tags[tag] = value;
-    }
-    return tags;
-}
-
-function buildQRIS(tags) {
-    let result = '';
-    const sortedKeys = Object.keys(tags).sort();
-    for (const key of sortedKeys) {
-        const value = tags[key];
-        const length = String(value.length).padStart(2, '0');
-        result += key + length + value;
-    }
-    return result;
-}
-
-// ============================================
-// CRC16-CCITT (XModem) - YANG BENAR
-// ============================================
-function calculateCRC16(data) {
-    let crc = 0xFFFF;
-    const polynomial = 0x1021;
-    for (let i = 0; i < data.length; i++) {
-        crc ^= data.charCodeAt(i) << 8;
-        for (let j = 0; j < 8; j++) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ polynomial;
-            } else {
-                crc <<= 1;
-            }
-            crc &= 0xFFFF;
-        }
-    }
-    return crc.toString(16).toUpperCase().padStart(4, '0');
-}
-
-// ============================================
-// 🔥 GENERATE QRIS DINAMIS
-// ============================================
-function generateDynamicQRIS(amount, orderNumber) {
-    try {
-        // Parse template
-        const tags = parseQRIS(QRIS_TEMPLATE);
-        
-        // 🔥 1. Tag 01 = 12 (Dynamic QRIS - one-time use)
-        tags['01'] = '12';
-        
-        // 🔥 2. Tag 54 = Amount (5 digit, tanpa padding)
-        tags['54'] = String(amount);
-        
-        // 🔥 3. Tag 62 = Additional Data dengan ID Invoice
-        // Format: 01 + length + INV + orderNumber
-        const invoiceId = `INV${orderNumber.slice(-10)}`;
-        tags['62'] = `01${String(invoiceId.length).padStart(2, '0')}${invoiceId}`;
-        
-        // 🔥 4. Hapus CRC lama
-        delete tags['63'];
-        
-        // 🔥 5. Build QRIS tanpa CRC
-        const tempQRIS = buildQRIS(tags);
-        
-        // 🔥 6. Hitung CRC
-        const crc = calculateCRC16(tempQRIS);
-        tags['63'] = crc;
-        
-        // 🔥 7. Build final QRIS
-        const dynamicQRIS = buildQRIS(tags);
-        
-        console.log('✅ QRIS Dinamis generated!');
-        console.log(`📌 Amount: ${amount}`);
-        console.log(`📌 Invoice: ${invoiceId}`);
-        console.log(`📌 CRC: ${crc}`);
-        console.log(`📌 Length: ${dynamicQRIS.length}`);
-        
-        return {
-            success: true,
-            qrisString: dynamicQRIS,
-            amount: amount,
-            invoiceId: invoiceId,
-            crc: crc
-        };
-        
-    } catch (error) {
-        console.error('❌ QRIS generate error:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// ============================================
-// VERIFIKASI QRIS
-// ============================================
-function verifyQRIS(qrisString) {
-    const tags = parseQRIS(qrisString);
-    const tempTags = { ...tags };
-    delete tempTags['63'];
-    const tempQRIS = buildQRIS(tempTags);
-    const calculatedCRC = calculateCRC16(tempQRIS);
-    const isValid = tags['63'] === calculatedCRC;
-    
-    console.log('📦 QRIS Verification:');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`📌 Dynamic QRIS: ${tags['01'] === '12' ? '✅ YES' : '❌ NO'}`);
-    console.log(`📌 Amount: ${tags['54']}`);
-    console.log(`📌 Invoice: ${tags['62']?.substring(3) || 'N/A'}`);
-    console.log(`📌 CRC: ${tags['63']}`);
-    console.log(`📌 Calculated CRC: ${calculatedCRC}`);
-    console.log(`📌 QRIS Valid? ${isValid ? '✅ YES' : '❌ NO'}`);
-    
-    return {
-        valid: isValid,
-        tags: tags,
-        calculatedCRC: calculatedCRC
-    };
-}
-
-// ============================================
-// TEST GENERATE
-// ============================================
-function testQRIS(amount, orderNumber) {
-    const result = generateDynamicQRIS(amount, orderNumber || 'BFC202608109981');
-    if (result.success) {
-        console.log(`📌 QRIS String: ${result.qrisString}`);
-        verifyQRIS(result.qrisString);
-    }
-    return result;
-}
-
-// ============================================
-// TAMPILKAN QRIS DI MODAL
+// 🔥 QRIS STATIS - PAKAI GAMBAR
 // ============================================
 function showQRISPaymentModal(orderData) {
     const modal = createQRISModal();
     const content = document.getElementById('qris-modal-content');
     if (!content) return;
-
-    // 🔥 Generate QRIS Dinamis
-    const result = generateDynamicQRIS(orderData.total, orderData.order_number);
-    
-    if (!result.success) {
-        content.innerHTML = `
-            <div style="text-align:center; padding:20px; color:#dc3545;">
-                <i class="fas fa-exclamation-circle fa-3x"></i>
-                <p>Gagal generate QRIS: ${result.error}</p>
-                <button onclick="closeQRISModal()" class="btn btn-secondary">Tutup</button>
-            </div>
-        `;
-        modal.style.display = 'flex';
-        return;
-    }
-    
-    const qrData = result.qrisString;
 
     content.innerHTML = `
         <div style="position:relative; text-align:center; padding:10px 0;">
@@ -560,125 +395,46 @@ function showQRISPaymentModal(orderData) {
             <p style="font-size:1.2rem; margin:10px 0;">
                 Total: <strong style="color:#dc3545;">Rp ${formatRupiah(orderData.total)}</strong>
             </p>
-            <div id="qris-container" style="margin:20px auto; padding:15px; background:#f8f9fa; border-radius:10px; max-width:300px; min-height:250px; display:flex; align-items:center; justify-content:center;">
-                <div id="qrcode" style="width:250px; height:250px; margin:0 auto;"></div>
+            <div id="qris-container" style="margin:20px auto; padding:15px; background:#f8f9fa; border-radius:10px; max-width:300px; min-height:200px; display:flex; align-items:center; justify-content:center;">
+                <img src="images/qris.jpg" alt="QRIS Payment" 
+                     style="max-width:100%; border-radius:8px;"
+                     onerror="this.style.display='none'; document.getElementById('qris-error').style.display='block';">
+                <div id="qris-error" style="display:none; color:#dc3545; padding:10px;">
+                    <i class="fas fa-exclamation-circle"></i> Gambar QRIS tidak ditemukan
+                    <br>
+                    <small>Pastikan file images/qris.jpg ada</small>
+                </div>
             </div>
-            <p style="font-size:0.85rem; color:#6c757d;">⏰ QRIS berlaku 15 menit</p>
-            <div style="margin:15px 0; padding:10px; background:#e8f5e9; border-radius:8px; color:#2e7d32; font-size:0.9rem;">
-                <i class="fas fa-check-circle"></i> Transfer sesuai total pesanan
-                <br>
+            <p style="font-size:0.85rem; color:#6c757d; margin-top:8px;">
+                <i class="fas fa-info-circle"></i> Transfer sesuai total pesanan ke rekening BSI
+            </p>
+            <p style="font-size:0.85rem; color:#6c757d;">
                 <strong>BSI: 1234567890</strong> a.n. Babeh Fried Chicken
+            </p>
+            <div id="qris-status" style="margin:15px 0; padding:10px; background:#fff3cd; border-radius:8px; color:#856404;">
+                ⏳ Menunggu verifikasi pembayaran...
             </div>
             <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                 <button onclick="closeQRISModal()" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;">
                     <i class="fas fa-times"></i> Tutup
                 </button>
-                <button onclick="copyQRISString()" style="padding:8px 20px; background:#28a745; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;">
-                    <i class="fas fa-copy"></i> Copy QRIS
+                <button onclick="manualCheckPayment('${orderData.order_number}')" style="padding:8px 20px; background:#dc3545; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                    <i class="fas fa-sync"></i> Cek Status
                 </button>
             </div>
-            <p style="font-size:0.7rem; color:#6c757d; margin-top:10px;">
+            <p style="font-size:0.75rem; color:#6c757d; margin-top:10px;">
                 Kirim bukti transfer ke WhatsApp admin: <strong>082121266056</strong>
             </p>
         </div>
     `;
 
     modal.style.display = 'flex';
-
-    // Render QR Code
-    setTimeout(() => {
-        const container = document.getElementById('qrcode');
-        if (container) {
-            try {
-                container.innerHTML = '';
-                new QRCode(container, {
-                    text: qrData,
-                    width: 250,
-                    height: 250,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.L
-                });
-                console.log('✅ QR Code generated!');
-            } catch (error) {
-                console.error('❌ QRCode error:', error);
-            }
-        }
-    }, 300);
-}
-
-// ============================================
-// SUBMIT ORDER (PAKAI QRIS DINAMIS)
-// ============================================
-async function submitOrder(event) {
-    event.preventDefault();
-    console.log('📝 Starting order submission...');
     
-    const order = JSON.parse(localStorage.getItem('currentOrder') || '{"items": [], "total": 0, "total_berat": 0}');
-    if (order.items.length === 0) {
-        showNotification('Silakan tambahkan pesanan terlebih dahulu!', 'error');
-        return;
-    }
-
-    const customerName = document.getElementById('customer-name')?.value?.trim();
-    const customerPhone = document.getElementById('customer-phone')?.value?.trim();
-    const customerAddress = document.getElementById('customer-address')?.value?.trim();
-    const notes = document.getElementById('order-notes')?.value?.trim() || '';
-    const subdistrictId = document.getElementById('selected-subdistrict')?.value;
-    const shippingCost = parseInt(document.getElementById('shipping-cost')?.value) || 0;
-
-    if (!customerName || !customerPhone || !customerAddress) {
-        showNotification('Mohon lengkapi data pemesan!', 'error');
-        return;
-    }
-    if (!subdistrictId) {
-        showNotification('Silakan cari dan pilih lokasi tujuan!', 'error');
-        return;
-    }
-
-    const orderNumber = generateOrderNumber();
-    const orderData = {
-        order_number: orderNumber,
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_address: customerAddress,
-        items: order.items,
-        subtotal: order.total,
-        shipping_cost: shippingCost,
-        total: order.total + shippingCost,
-        total_berat: order.total_berat || 0,
-        shipping_subdistrict: subdistrictId,
-        payment_method: 'QRIS',
-        payment_status: 'Menunggu Pembayaran',
-        notes: notes || '',
-        status: 'pending'
-    };
-
-    try {
-        console.log('📤 Submitting order...');
-        const { data, error } = await window.supabaseClient
-            .from('order_fried_chicken')
-            .insert([orderData])
-            .select();
-
-        if (error) throw error;
-
-        const savedOrder = data[0];
-        console.log('✅ Order saved:', savedOrder);
-
-        await sendCustomerNotification(savedOrder);
-        await sendAdminNotification(savedOrder);
-
-        localStorage.removeItem('currentOrder');
-        window.updateOrderBadge();
-
-        showQRISPaymentModal(savedOrder);
-
-    } catch (error) {
-        console.error('Submit error:', error);
-        showNotification('Gagal membuat pesanan: ' + error.message, 'error');
+    if (orderData.order_number) {
+        startPaymentPolling(orderData.order_number);
     }
 }
+
 // ============================================
 // QRIS MODAL FUNCTIONS
 // ============================================
