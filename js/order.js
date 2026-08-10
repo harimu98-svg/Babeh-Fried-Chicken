@@ -7,10 +7,10 @@ const ORIGIN_SUBDISTRICT_ID = '26017';
 const ORIGIN_NAME = 'Curug, Depok, Jawa Barat';
 
 // ============================================
-// QRIS TEMPLATE - DARI QRISLY YANG SUDAH TERBUKTI
+// QRIS TEMPLATE DARI QRISLY (VALID)
 // ============================================
-// 🔥 QRIS ini adalah hasil generate dari QRISLY (sudah valid)
-// Gunakan ini sebagai template, hanya ubah amount-nya
+// 🔥 QRIS template lengkap (tanpa tag 54)
+// Format: 000201... tanpa amount
 const QRIS_TEMPLATE = '00020101021126580013ID.NETZME.WWW01189360081401001769850208oOQc4v3U0303UMI51440014ID.CO.QRIS.WWW0215ID10254577823040303UMI5204723053033605802ID5924Babeh Barbershop - Curug6005DEPOK61051651762070703A01';
 
 // ============================================
@@ -61,20 +61,20 @@ function calculateCRC16(data) {
 }
 
 /**
- * 🔥 GENERATE QRIS DINAMIS
- * Hanya ubah tag 54 (Amount) dan hitung ulang CRC
+ * 🔥 GENERATE QRIS DINAMIS - FORMAT SESUAI QRISLY
+ * Amount: 5 digit (contoh: 10000 → '10000')
  */
 function generateDynamicQRIS(amount) {
     try {
         // Parse template
         const tags = parseQRIS(QRIS_TEMPLATE);
         
-        // 🔥 1. Tambah/update tag 54 (Amount)
-        // Format: 6 digit (contoh: 10000 → '010000')
-        const amountStr = String(amount).padStart(6, '0');
+        // 🔥 1. Tambah tag 54 (Amount) - FORMAT 5 DIGIT
+        // Contoh: 10000 → '10000' (bukan '010000')
+        const amountStr = String(amount);
         tags['54'] = amountStr;
         
-        // 🔥 2. Hapus CRC lama (tag 63)
+        // 🔥 2. Hapus CRC lama
         delete tags['63'];
         
         // 🔥 3. Build sementara untuk hitung CRC
@@ -95,7 +95,8 @@ function generateDynamicQRIS(amount) {
             success: true,
             qrisString: dynamicQRIS,
             amount: amount,
-            crc: crc
+            crc: crc,
+            tags: tags
         };
         
     } catch (error) {
@@ -105,8 +106,63 @@ function generateDynamicQRIS(amount) {
 }
 
 // ============================================
-// TAMPILKAN QRIS DI MODAL
+// VERIFIKASI QRIS
 // ============================================
+function verifyQRIS(qrisString) {
+    const tags = parseQRIS(qrisString);
+    const requiredTags = ['59', '54', '58', '63'];
+    const missing = requiredTags.filter(tag => !tags[tag]);
+    
+    console.log('📌 Tags found:', Object.keys(tags));
+    console.log('📌 Merchant:', tags['59']);
+    console.log('📌 Amount:', tags['54']);
+    console.log('📌 CRC:', tags['63']);
+    console.log('📌 QRIS Valid?', missing.length === 0);
+    
+    return {
+        valid: missing.length === 0,
+        tags: tags,
+        missing: missing
+    };
+}
+
+// ============================================
+// TEST DI CONSOLE
+// ============================================
+function testQRIS() {
+    const amount = 10086; // Sama dengan QRISLY
+    const result = generateDynamicQRIS(amount);
+    console.log('📦 Result:', result);
+    console.log('📌 QRIS String:', result.qrisString);
+    console.log('📌 Length:', result.qrisString.length);
+    
+    // Verifikasi
+    verifyQRIS(result.qrisString);
+    
+    return result;
+}
+
+// ============================================
+// QRIS MODAL FUNCTIONS
+// ============================================
+function createQRISModal() {
+    let modal = document.getElementById('qris-modal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'qris-modal';
+    modal.className = 'modal';
+    modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;';
+    modal.innerHTML = `<div class="modal-content" id="qris-modal-content" style="background:white; padding:25px; border-radius:12px; max-width:400px; width:90%; text-align:center; max-height:90vh; overflow-y:auto;"></div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e) { if (e.target === this) closeQRISModal(); });
+    return modal;
+}
+
+function closeQRISModal() {
+    const modal = document.getElementById('qris-modal');
+    if (modal) modal.style.display = 'none';
+}
+
 function showQRISPaymentModal(orderData) {
     const modal = createQRISModal();
     const content = document.getElementById('qris-modal-content');
@@ -165,7 +221,7 @@ function showQRISPaymentModal(orderData) {
 
     modal.style.display = 'flex';
 
-    // 🔥 Render QR Code
+    // Render QR Code
     setTimeout(() => {
         const container = document.getElementById('qrcode');
         if (container) {
@@ -180,10 +236,8 @@ function showQRISPaymentModal(orderData) {
                     correctLevel: QRCode.CorrectLevel.L
                 });
                 console.log('✅ QR Code generated!');
-                console.log('📌 QRIS String:', qrData.substring(0, 50) + '...');
             } catch (error) {
                 console.error('❌ QRCode error:', error);
-                // Fallback ke Google Chart
                 const img = document.createElement('img');
                 img.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
                 img.style.cssText = 'max-width:100%; border-radius:8px;';
@@ -197,39 +251,16 @@ function showQRISPaymentModal(orderData) {
     }, 300);
 }
 
-// ============================================
-// QRIS MODAL FUNCTIONS
-// ============================================
-function createQRISModal() {
-    let modal = document.getElementById('qris-modal');
-    if (modal) return modal;
-    modal = document.createElement('div');
-    modal.id = 'qris-modal';
-    modal.className = 'modal';
-    modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;';
-    modal.innerHTML = `<div class="modal-content" id="qris-modal-content" style="background:white; padding:25px; border-radius:12px; max-width:400px; width:90%; text-align:center; max-height:90vh; overflow-y:auto;"></div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener('click', function(e) { if (e.target === this) closeQRISModal(); });
-    return modal;
-}
-
-function closeQRISModal() {
-    const modal = document.getElementById('qris-modal');
-    if (modal) modal.style.display = 'none';
-}
-
 function copyQRISString() {
     const container = document.getElementById('qris-container');
     if (!container) return;
     const canvas = container.querySelector('canvas');
     if (canvas) {
-        // Ambil text dari QRCode.js
         const qrData = canvas.getAttribute('data-text');
         if (qrData) {
             navigator.clipboard.writeText(qrData).then(() => {
                 showNotification('✅ QRIS string copied!', 'success');
             }).catch(() => {
-                // Fallback
                 const textarea = document.createElement('textarea');
                 textarea.value = qrData;
                 document.body.appendChild(textarea);
@@ -243,7 +274,7 @@ function copyQRISString() {
 }
 
 // ============================================
-// WHATSAPP NOTIFICATIONS (WAHA)
+// WHATSAPP NOTIFICATIONS
 // ============================================
 const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
 const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
