@@ -3,24 +3,20 @@
 // KONFIGURASI API
 // ============================================
 const API_BASE_URL = '/.netlify/functions/rajaongkir';
-const ORIGIN_SUBDISTRICT_ID = '26017'; // CURUG, DEPOK
+const ORIGIN_SUBDISTRICT_ID = '26017';
 const ORIGIN_NAME = 'Curug, Depok, Jawa Barat';
 
 // ============================================
-// QRIS TEMPLATE DARI QRISLY
+// QRIS TEMPLATE - DARI QRISLY YANG SUDAH TERBUKTI
 // ============================================
-// Template QRIS statis (TANPA AMOUNT)
-// Dari QRIS yang Anda berikan: amount 1008
-// Tag 54 (1008) akan diganti dinamis
+// 🔥 QRIS ini adalah hasil generate dari QRISLY (sudah valid)
+// Gunakan ini sebagai template, hanya ubah amount-nya
 const QRIS_TEMPLATE = '00020101021126580013ID.NETZME.WWW01189360081401001769850208oOQc4v3U0303UMI51440014ID.CO.QRIS.WWW0215ID10254577823040303UMI5204723053033605802ID5924Babeh Barbershop - Curug6005DEPOK61051651762070703A01';
 
 // ============================================
 // QRIS PARSER & GENERATOR
 // ============================================
 
-/**
- * Parse QRIS string ke object tags
- */
 function parseQRIS(qrisString) {
     const tags = {};
     let i = 0;
@@ -36,9 +32,6 @@ function parseQRIS(qrisString) {
     return tags;
 }
 
-/**
- * Build QRIS string dari object tags
- */
 function buildQRIS(tags) {
     let result = '';
     const sortedKeys = Object.keys(tags).sort();
@@ -50,9 +43,6 @@ function buildQRIS(tags) {
     return result;
 }
 
-/**
- * Hitung CRC16-CCITT untuk QRIS
- */
 function calculateCRC16(data) {
     let crc = 0xFFFF;
     const polynomial = 0x1021;
@@ -71,55 +61,41 @@ function calculateCRC16(data) {
 }
 
 /**
- * Generate QRIS Dinamis
- * @param {number} amount - Total pembayaran
- * @param {number} uniqueId - Unique ID untuk tracking (opsional)
- * @param {string} merchantName - Nama merchant (opsional)
+ * 🔥 GENERATE QRIS DINAMIS
+ * Hanya ubah tag 54 (Amount) dan hitung ulang CRC
  */
-function generateDynamicQRIS(amount, uniqueId = null, merchantName = null) {
+function generateDynamicQRIS(amount) {
     try {
-        // Parse template QRIS
+        // Parse template
         const tags = parseQRIS(QRIS_TEMPLATE);
         
         // 🔥 1. Tambah/update tag 54 (Amount)
-        // Amount harus 6 digit (contoh: 10000 → '010000')
+        // Format: 6 digit (contoh: 10000 → '010000')
         const amountStr = String(amount).padStart(6, '0');
         tags['54'] = amountStr;
         
-        // 🔥 2. Update nama merchant jika diberikan
-        if (merchantName) {
-            tags['59'] = merchantName.substring(0, 25);
-        }
-        
-        // 🔥 3. Tambahkan unique ID jika diberikan (tag 01)
-        if (uniqueId) {
-            tags['01'] = String(uniqueId).padStart(2, '0');
-        }
-        
-        // 🔥 4. Hapus CRC lama (tag 63)
+        // 🔥 2. Hapus CRC lama (tag 63)
         delete tags['63'];
         
-        // 🔥 5. Build QRIS sementara untuk hitung CRC
+        // 🔥 3. Build sementara untuk hitung CRC
         const tempQRIS = buildQRIS(tags);
         const crc = calculateCRC16(tempQRIS);
         tags['63'] = crc;
         
-        // 🔥 6. Build final QRIS
+        // 🔥 4. Build final QRIS
         const dynamicQRIS = buildQRIS(tags);
         
         console.log('✅ QRIS Dinamis generated!');
         console.log(`📌 Amount: ${amount}`);
-        console.log(`📌 Unique ID: ${uniqueId || 'N/A'}`);
         console.log(`📌 CRC: ${crc}`);
         console.log(`📌 QRIS Length: ${dynamicQRIS.length}`);
+        console.log(`📌 QRIS String: ${dynamicQRIS.substring(0, 50)}...`);
         
         return {
             success: true,
             qrisString: dynamicQRIS,
             amount: amount,
-            uniqueId: uniqueId,
-            crc: crc,
-            tags: tags
+            crc: crc
         };
         
     } catch (error) {
@@ -129,20 +105,15 @@ function generateDynamicQRIS(amount, uniqueId = null, merchantName = null) {
 }
 
 // ============================================
-// QRIS DISPLAY FUNCTIONS
+// TAMPILKAN QRIS DI MODAL
 // ============================================
-
-/**
- * Tampilkan QRIS di modal
- */
 function showQRISPaymentModal(orderData) {
     const modal = createQRISModal();
     const content = document.getElementById('qris-modal-content');
     if (!content) return;
 
-    // 🔥 Generate QRIS dinamis
-    const uniqueId = Date.now() % 10000;
-    const result = generateDynamicQRIS(orderData.total, uniqueId, 'Babeh Fried Chicken');
+    // 🔥 GENERATE QRIS DINAMIS
+    const result = generateDynamicQRIS(orderData.total);
     
     if (!result.success) {
         content.innerHTML = `
@@ -157,7 +128,6 @@ function showQRISPaymentModal(orderData) {
     }
     
     const qrData = result.qrisString;
-    const isQrisString = qrData && typeof qrData === 'string' && qrData.length > 50;
 
     content.innerHTML = `
         <div style="position:relative; text-align:center; padding:10px 0;">
@@ -169,13 +139,10 @@ function showQRISPaymentModal(orderData) {
                 Total: <strong style="color:#dc3545;">Rp ${formatRupiah(orderData.total)}</strong>
             </p>
             <div id="qris-container" style="margin:20px auto; padding:15px; background:#f8f9fa; border-radius:10px; max-width:300px; min-height:250px; display:flex; align-items:center; justify-content:center;">
-                ${isQrisString ? `<div id="qrcode" style="width:250px; height:250px; margin:0 auto;"></div>` : `<p style="color:#dc3545;">QRIS tidak tersedia</p>`}
+                <div id="qrcode" style="width:250px; height:250px; margin:0 auto;"></div>
             </div>
             <p style="font-size:0.85rem; color:#6c757d;">
                 ⏰ QRIS berlaku 15 menit
-            </p>
-            <p style="font-size:0.75rem; color:#6c757d; word-break:break-all; max-width:300px; margin:0 auto;">
-                <small>CRC: ${result.crc}</small>
             </p>
             <div style="margin:15px 0; padding:10px; background:#e8f5e9; border-radius:8px; color:#2e7d32; font-size:0.9rem;">
                 <i class="fas fa-check-circle"></i> Transfer sesuai total pesanan
@@ -199,62 +166,35 @@ function showQRISPaymentModal(orderData) {
     modal.style.display = 'flex';
 
     // 🔥 Render QR Code
-    if (isQrisString) {
-        setTimeout(() => {
-            const container = document.getElementById('qrcode');
-            if (container) {
-                try {
-                    container.innerHTML = '';
-                    new QRCode(container, {
-                        text: qrData,
-                        width: 250,
-                        height: 250,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.L
-                    });
-                    console.log('✅ QR Code generated!');
-                    console.log('📌 QRIS String:', qrData.substring(0, 50) + '...');
-                } catch (error) {
-                    console.error('❌ QRCode error:', error);
-                    // Fallback ke Google Chart
-                    const img = document.createElement('img');
-                    img.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
-                    img.style.cssText = 'max-width:100%; border-radius:8px;';
-                    const containerDiv = document.getElementById('qris-container');
-                    if (containerDiv) {
-                        containerDiv.innerHTML = '';
-                        containerDiv.appendChild(img);
-                    }
+    setTimeout(() => {
+        const container = document.getElementById('qrcode');
+        if (container) {
+            try {
+                container.innerHTML = '';
+                new QRCode(container, {
+                    text: qrData,
+                    width: 250,
+                    height: 250,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.L
+                });
+                console.log('✅ QR Code generated!');
+                console.log('📌 QRIS String:', qrData.substring(0, 50) + '...');
+            } catch (error) {
+                console.error('❌ QRCode error:', error);
+                // Fallback ke Google Chart
+                const img = document.createElement('img');
+                img.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
+                img.style.cssText = 'max-width:100%; border-radius:8px;';
+                const containerDiv = document.getElementById('qris-container');
+                if (containerDiv) {
+                    containerDiv.innerHTML = '';
+                    containerDiv.appendChild(img);
                 }
             }
-        }, 300);
-    }
-}
-
-/**
- * Copy QRIS string ke clipboard
- */
-function copyQRISString() {
-    const container = document.getElementById('qris-container');
-    if (!container) return;
-    
-    // Ambil QRIS string dari QRCode.js
-    const qrData = container.querySelector('canvas')?.getAttribute('data-text');
-    if (qrData) {
-        navigator.clipboard.writeText(qrData).then(() => {
-            showNotification('✅ QRIS string copied!', 'success');
-        }).catch(() => {
-            // Fallback
-            const textarea = document.createElement('textarea');
-            textarea.value = qrData;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            textarea.remove();
-            showNotification('✅ QRIS string copied!', 'success');
-        });
-    }
+        }
+    }, 300);
 }
 
 // ============================================
@@ -278,8 +218,97 @@ function closeQRISModal() {
     if (modal) modal.style.display = 'none';
 }
 
+function copyQRISString() {
+    const container = document.getElementById('qris-container');
+    if (!container) return;
+    const canvas = container.querySelector('canvas');
+    if (canvas) {
+        // Ambil text dari QRCode.js
+        const qrData = canvas.getAttribute('data-text');
+        if (qrData) {
+            navigator.clipboard.writeText(qrData).then(() => {
+                showNotification('✅ QRIS string copied!', 'success');
+            }).catch(() => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = qrData;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                textarea.remove();
+                showNotification('✅ QRIS string copied!', 'success');
+            });
+        }
+    }
+}
+
 // ============================================
-// SUBMIT ORDER (TANPA POLLING)
+// WHATSAPP NOTIFICATIONS (WAHA)
+// ============================================
+const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
+const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
+const WAHA_ADMIN_GROUP = '6282121266056@c.us';
+
+async function sendWhatsAppWAHA(phoneNumber, message) {
+    try {
+        if (!phoneNumber) return false;
+        let formattedPhone = phoneNumber.trim();
+        if (!formattedPhone.includes('@c.us') && !formattedPhone.includes('@g.us')) {
+            formattedPhone = formattedPhone.replace(/^0/, '62').replace(/^\+62/, '62').replace(/[^0-9]/g, '');
+            formattedPhone += '@c.us';
+        }
+        const response = await fetch(WAHA_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Api-Key': WAHA_API_KEY },
+            body: JSON.stringify({ session: 'Session1', chatId: formattedPhone, text: message })
+        });
+        if (!response.ok) throw new Error(`WAHA API error: ${response.status}`);
+        return true;
+    } catch (error) {
+        console.error('❌ WA error:', error);
+        return false;
+    }
+}
+
+async function sendCustomerNotification(orderData) {
+    const message = `*🍗 Babeh Fried Chicken - Pesanan Berhasil!*
+
+Halo *${orderData.customer_name}*,
+
+Pesanan Anda telah kami terima:
+
+📋 *No. Pesanan:* ${orderData.order_number}
+📅 *Tanggal:* ${new Date().toLocaleDateString('id-ID')}
+💰 *Total: Rp ${formatRupiah(orderData.total)}*
+
+📌 *Status:* Menunggu Pembayaran QRIS
+
+*📱 Cara Bayar:*
+Scan QRIS dan transfer sesuai total ke:
+BSI: 1234567890
+a.n. Babeh Fried Chicken
+
+Kirim bukti transfer ke WhatsApp admin.
+
+Terima kasih! 🍗`;
+
+    await sendWhatsAppWAHA(orderData.customer_phone, message);
+}
+
+async function sendAdminNotification(orderData) {
+    const message = `*📢 PESANAN BARU!*
+
+No: ${orderData.order_number}
+Customer: ${orderData.customer_name}
+WA: ${orderData.customer_phone}
+Total: Rp ${formatRupiah(orderData.total)}
+Alamat: ${orderData.customer_address}`;
+
+    await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, message);
+}
+
+// ============================================
+// SUBMIT ORDER
 // ============================================
 async function submitOrder(event) {
     event.preventDefault();
@@ -337,100 +366,18 @@ async function submitOrder(event) {
         const savedOrder = data[0];
         console.log('✅ Order saved:', savedOrder);
 
-        // Kirim WA notifikasi
         await sendCustomerNotification(savedOrder);
         await sendAdminNotification(savedOrder);
 
-        // Clear cart
         localStorage.removeItem('currentOrder');
         window.updateOrderBadge();
 
-        // Tampilkan QRIS
         showQRISPaymentModal(savedOrder);
 
     } catch (error) {
         console.error('Submit error:', error);
         showNotification('Gagal membuat pesanan: ' + error.message, 'error');
     }
-}
-
-// ============================================
-// WAHA WHATSAPP NOTIFICATIONS
-// ============================================
-const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
-const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
-const WAHA_ADMIN_GROUP = '6282121266056@c.us';
-
-async function sendWhatsAppWAHA(phoneNumber, message) {
-    try {
-        if (!phoneNumber) return false;
-        let formattedPhone = phoneNumber.trim();
-        if (!formattedPhone.includes('@c.us') && !formattedPhone.includes('@g.us')) {
-            formattedPhone = formattedPhone.replace(/^0/, '62').replace(/^\+62/, '62').replace(/[^0-9]/g, '');
-            formattedPhone += '@c.us';
-        }
-        const response = await fetch(WAHA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Api-Key': WAHA_API_KEY },
-            body: JSON.stringify({ session: 'Session1', chatId: formattedPhone, text: message })
-        });
-        if (!response.ok) throw new Error(`WAHA API error: ${response.status}`);
-        return true;
-    } catch (error) {
-        console.error('❌ WA error:', error);
-        return false;
-    }
-}
-
-async function sendCustomerNotification(orderData) {
-    const message = `*🍗 Babeh Fried Chicken - Pesanan Berhasil!*
-
-Halo *${orderData.customer_name}*,
-
-Pesanan Anda telah kami terima:
-
-📋 *No. Pesanan:* ${orderData.order_number}
-📅 *Tanggal:* ${new Date().toLocaleDateString('id-ID')}
-
-*📦 Detail Pesanan:*
-${orderData.items.map(item => 
-    `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)}`
-).join('\n')}
-
-📊 *Total: Rp ${formatRupiah(orderData.total)}*
-
-📍 *Alamat:* ${orderData.customer_address}
-
-📌 *Status:* Menunggu Pembayaran QRIS
-
-*📱 Cara Bayar:*
-Scan QRIS yang muncul di layar Anda.
-Transfer sesuai total pesanan ke:
-BSI: 1234567890
-a.n. Babeh Fried Chicken
-
-Kirim bukti transfer ke WhatsApp admin.
-
-Terima kasih! 🍗`;
-
-    await sendWhatsAppWAHA(orderData.customer_phone, message);
-}
-
-async function sendAdminNotification(orderData) {
-    const message = `*📢 PESANAN BARU!*
-
-No: ${orderData.order_number}
-Customer: ${orderData.customer_name}
-WA: ${orderData.customer_phone}
-Total: Rp ${formatRupiah(orderData.total)}
-Alamat: ${orderData.customer_address}
-
-Detail:
-${orderData.items.map(item => 
-    `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)}`
-).join('\n')}`;
-
-    await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, message);
 }
 
 // ============================================
