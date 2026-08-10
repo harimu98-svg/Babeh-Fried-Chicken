@@ -489,12 +489,13 @@
 
 <script>
 // ============================================
-// 🔥 SUPABASE AUTH
+// 🔥 CONFIGURATION - PAKAI NAMA UNIK
 // ============================================
 const SUPABASE_URL = 'https://intzwjmlypmopzauxeqt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImludHp3am1seXBtb3B6YXV4ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MTc5MTIsImV4cCI6MjA3MDI5MzkxMn0.VwwVEDdHtYP5gui4epTcNfLXhPkmfFbRVb5y8mrXJiM';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 🔥 PAKAI NAMA VARIABEL UNIK - TIDAK BENTURAN DENGAN LIBRARY
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allOrders = [];
 let currentFilter = 'all';
@@ -506,16 +507,14 @@ let currentUser = null;
 
 // Cek session saat halaman dimuat
 async function checkSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
         currentUser = session.user;
-        // Cek apakah email yang login adalah babeh@gmail.com
         if (currentUser.email === 'babeh@gmail.com') {
             showDashboard();
             return;
         } else {
-            // Logout jika email bukan babeh@gmail.com
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             showLogin('❌ Akses ditolak. Hanya babeh@gmail.com yang diizinkan.');
         }
     }
@@ -533,7 +532,6 @@ async function handleLogin(e) {
     errorEl.classList.remove('show');
     errorEl.textContent = '';
 
-    // Validasi email harus babeh@gmail.com
     if (email !== 'babeh@gmail.com') {
         errorEl.textContent = '❌ Hanya email babeh@gmail.com yang diizinkan!';
         errorEl.classList.add('show');
@@ -544,7 +542,7 @@ async function handleLogin(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
 
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password
         });
@@ -564,7 +562,7 @@ async function handleLogin(e) {
 
 // Logout
 async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     currentUser = null;
     showLogin();
 }
@@ -650,7 +648,7 @@ async function verifyPayment(orderNumber, btn) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('order_fried_chicken')
             .update({
                 payment_status: 'Pembayaran Berhasil',
@@ -682,7 +680,7 @@ async function cancelOrder(orderNumber, btn) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
 
     try {
-        await supabase
+        await supabaseClient
             .from('order_fried_chicken')
             .update({ payment_status: 'Pembayaran Dibatalkan', status: 'cancelled', updated_at: new Date().toISOString() })
             .eq('order_number', orderNumber);
@@ -756,7 +754,7 @@ async function loadOrders() {
     container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Memuat pesanan...</p></div>';
 
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('order_fried_chicken')
             .select('*')
             .order('created_at', { ascending: false });
@@ -891,24 +889,21 @@ function renderOrders(orders) {
 document.addEventListener('DOMContentLoaded', function() {
     checkSession();
 
-    // Click outside modal
     document.getElementById('detailModal').addEventListener('click', function(e) {
         if (e.target === this) closeModal();
     });
 
-    // ESC key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeModal();
     });
 
-    // Auto refresh every 30 seconds (only when logged in)
     setInterval(() => {
         if (currentUser) loadOrders();
     }, 30000);
 });
 
 // ============================================
-// GLOBAL EXPORT (untuk onclick di HTML)
+// GLOBAL EXPORT
 // ============================================
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
