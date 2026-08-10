@@ -21,6 +21,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .header h1 { font-size: 1.5rem; }
@@ -80,9 +82,6 @@
         .btn-danger { background: #dc3545; color: white; }
         .btn-danger:hover { background: #c82333; }
         
-        .btn-warning { background: #ffc107; color: #333; }
-        .btn-warning:hover { background: #e0a800; }
-        
         .btn-secondary { background: #6c757d; color: white; }
         .btn-secondary:hover { background: #5a6268; }
         
@@ -97,11 +96,10 @@
         
         .status-badge.waiting { background: #fff3cd; color: #856404; }
         .status-badge.verified { background: #d4edda; color: #155724; }
-        .status-badge.success { background: #cce5ff; color: #004085; }
         .status-badge.cancelled { background: #f8d7da; color: #721c24; }
+        .status-badge.pending { background: #cce5ff; color: #004085; }
         
         .empty { text-align: center; padding: 40px; color: #6c757d; }
-        
         .loading { text-align: center; padding: 40px; }
         .loading i { font-size: 2rem; color: #dc3545; }
         
@@ -150,61 +148,67 @@
 
 <script>
 // ============================================
-// KONFIGURASI
+// 🔥 IIFE - MENCEGAH DUPLIKASI VARIABEL
 // ============================================
-const SUPABASE_URL = 'https://intzwjmlypmopzauxeqt.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImludHp3am1seXBtb3B6YXV4ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MTc5MTIsImV4cCI6MjA3MDI5MzkxMn0.VwwVEDdHtYP5gui4epTcNfLXhPkmfFbRVb5y8mrXJiM';
+(function() {
+    'use strict';
 
-const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
-const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
-const WAHA_ADMIN_GROUP = '6282121266056@c.us';
+    // ============================================
+    // KONFIGURASI
+    // ============================================
+    const SUPABASE_URL = 'https://intzwjmlypmopzauxeqt.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImludHp3am1seXBtb3B6YXV4ZXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ3MTc5MTIsImV4cCI6MjA3MDI5MzkxMn0.VwwVEDdHtYP5gui4epTcNfLXhPkmfFbRVb5y8mrXJiM';
 
-// Inisialisasi Supabase
-let supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendText';
+    const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
+    const WAHA_ADMIN_GROUP = '6282121266056@c.us';
 
-// ============================================
-// FUNGSI SEND WHATSAPP
-// ============================================
-async function sendWhatsAppWAHA(phoneNumber, message) {
-    try {
-        if (!phoneNumber) return false;
-        let formattedPhone = phoneNumber.trim();
-        if (!formattedPhone.includes('@c.us') && !formattedPhone.includes('@g.us')) {
-            formattedPhone = formattedPhone.replace(/^0/, '62').replace(/^\+62/, '62').replace(/[^0-9]/g, '');
-            formattedPhone += '@c.us';
+    // 🔥 Inisialisasi Supabase - PAKAI NAMA UNIK
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================
+    // FUNGSI SEND WHATSAPP
+    // ============================================
+    async function sendWhatsAppWAHA(phoneNumber, message) {
+        try {
+            if (!phoneNumber) return false;
+            let formattedPhone = phoneNumber.trim();
+            if (!formattedPhone.includes('@c.us') && !formattedPhone.includes('@g.us')) {
+                formattedPhone = formattedPhone.replace(/^0/, '62').replace(/^\+62/, '62').replace(/[^0-9]/g, '');
+                formattedPhone += '@c.us';
+            }
+            
+            const response = await fetch(WAHA_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Api-Key': WAHA_API_KEY
+                },
+                body: JSON.stringify({
+                    session: 'Session1',
+                    chatId: formattedPhone,
+                    text: message
+                })
+            });
+            
+            if (!response.ok) throw new Error(`WAHA error: ${response.status}`);
+            console.log(`✅ WA sent to: ${phoneNumber}`);
+            return true;
+        } catch (error) {
+            console.error('❌ WA error:', error);
+            return false;
         }
-        
-        const response = await fetch(WAHA_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Api-Key': WAHA_API_KEY
-            },
-            body: JSON.stringify({
-                session: 'Session1',
-                chatId: formattedPhone,
-                text: message
-            })
-        });
-        
-        if (!response.ok) throw new Error(`WAHA error: ${response.status}`);
-        console.log(`✅ WA sent to: ${phoneNumber}`);
-        return true;
-    } catch (error) {
-        console.error('❌ WA error:', error);
-        return false;
     }
-}
 
-// ============================================
-// PESAN WA
-// ============================================
-function getCustomerMessage(order) {
-    const items = order.items.map(item => 
-        `- ${item.name} x${item.quantity} = Rp ${item.price * item.quantity}`
-    ).join('\n');
-    
-    return `*✅ PEMBAYARAN BERHASIL! Babeh Fried Chicken*
+    // ============================================
+    // PESAN WA
+    // ============================================
+    function getCustomerMessage(order) {
+        const items = Array.isArray(order.items) ? order.items.map(item => 
+            `- ${item.name} x${item.quantity} = Rp ${(item.price * item.quantity).toLocaleString()}`
+        ).join('\n') : 'Tidak ada item';
+        
+        return `*✅ PEMBAYARAN BERHASIL! Babeh Fried Chicken*
 
 Halo *${order.customer_name}*,
 
@@ -220,10 +224,10 @@ ${items}
 *🍗 Pesanan akan segera diproses dan dikirim!*
 
 Terima kasih! 🙏`;
-}
+    }
 
-function getAdminMessage(order) {
-    return `*✅ PEMBAYARAN BERHASIL!*
+    function getAdminMessage(order) {
+        return `*✅ PEMBAYARAN BERHASIL!*
 
 Pesanan *${order.order_number}* oleh *${order.customer_name}*.
 
@@ -231,189 +235,194 @@ Pesanan *${order.order_number}* oleh *${order.customer_name}*.
 📌 Status: In Process
 
 Segera proses pengiriman. 🚀`;
-}
-
-// ============================================
-// FUNGSI VERIFIKASI
-// ============================================
-async function verifyPayment(orderNumber, btn) {
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
     }
 
-    try {
-        // 🔥 1. Update status di Supabase
-        const { data, error } = await supabase
-            .from('order_fried_chicken')
-            .update({
-                payment_status: 'Pembayaran Berhasil',
-                status: 'In Process',
-                payment_verified_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            })
-            .eq('order_number', orderNumber)
-            .select();
-
-        if (error) throw error;
-
-        const order = data[0];
-        console.log('✅ Order updated:', order);
-
-        // 🔥 2. Kirim WA ke Customer
-        await sendWhatsAppWAHA(order.customer_phone, getCustomerMessage(order));
-
-        // 🔥 3. Kirim WA ke Admin
-        await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, getAdminMessage(order));
-
-        alert('✅ Pembayaran berhasil diverifikasi! WA notifikasi terkirim.');
-
-        // 🔥 4. Refresh daftar
-        loadOrders();
-
-    } catch (error) {
-        console.error('❌ Error:', error);
-        alert('❌ Gagal verifikasi: ' + error.message);
-    }
-
-    if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check"></i> Verifikasi';
-    }
-}
-
-// ============================================
-// FUNGSI BATAL
-// ============================================
-async function cancelOrder(orderNumber, btn) {
-    if (!confirm('Yakin ingin membatalkan pesanan ini?')) return;
-
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    }
-
-    try {
-        const { error } = await supabase
-            .from('order_fried_chicken')
-            .update({
-                payment_status: 'Pembayaran Dibatalkan',
-                status: 'cancelled',
-                updated_at: new Date().toISOString()
-            })
-            .eq('order_number', orderNumber);
-
-        if (error) throw error;
-
-        alert('✅ Pesanan dibatalkan.');
-        loadOrders();
-
-    } catch (error) {
-        console.error('❌ Error:', error);
-        alert('❌ Gagal batalkan: ' + error.message);
-    }
-
-    if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-times"></i> Batal';
-    }
-}
-
-// ============================================
-// LOAD ORDERS
-// ============================================
-async function loadOrders() {
-    const container = document.getElementById('ordersContainer');
-    container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>';
-
-    try {
-        // Ambil semua order, urutkan dari terbaru
-        const { data, error } = await supabase
-            .from('order_fried_chicken')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // Update stats
-        const waiting = data.filter(o => o.payment_status === 'Menunggu Verifikasi Pembayaran');
-        const success = data.filter(o => o.payment_status === 'Pembayaran Berhasil');
-        
-        document.getElementById('statWaiting').textContent = waiting.length;
-        document.getElementById('statSuccess').textContent = success.length;
-        document.getElementById('statTotal').textContent = data.length;
-        document.getElementById('orderCount').textContent = waiting.length;
-
-        if (data.length === 0) {
-            container.innerHTML = '<div class="empty"><i class="fas fa-inbox fa-3x"></i><p>Belum ada pesanan</p></div>';
-            return;
+    // ============================================
+    // FUNGSI VERIFIKASI
+    // ============================================
+    async function verifyPayment(orderNumber, btn) {
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
         }
 
-        // Render cards
-        container.innerHTML = data.map(order => {
-            const statusClass = order.payment_status === 'Pembayaran Berhasil' ? 'verified' :
-                               order.payment_status === 'Menunggu Verifikasi Pembayaran' ? 'waiting' :
-                               order.payment_status === 'Pembayaran Dibatalkan' ? 'cancelled' : '';
-            
-            const isWaiting = order.payment_status === 'Menunggu Verifikasi Pembayaran';
-            const isSuccess = order.payment_status === 'Pembayaran Berhasil';
-            const isCancelled = order.payment_status === 'Pembayaran Dibatalkan';
+        try {
+            // 🔥 Update status di Supabase
+            const { data, error } = await supabaseClient
+                .from('order_fried_chicken')
+                .update({
+                    payment_status: 'Pembayaran Berhasil',
+                    status: 'In Process',
+                    payment_verified_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('order_number', orderNumber)
+                .select();
 
-            return `
-                <div class="order-card">
-                    <div class="info">
-                        <div class="name">${order.customer_name}</div>
-                        <div class="detail">
-                            📋 ${order.order_number} | 📱 ${order.customer_phone} | 📅 ${new Date(order.created_at).toLocaleDateString('id-ID')}
-                        </div>
-                        <div class="detail">📍 ${order.customer_address}</div>
-                        <div class="total">💰 Rp ${order.total.toLocaleString()}</div>
-                        <div>
-                            <span class="status-badge ${statusClass}">${order.payment_status}</span>
-                            ${order.status ? `<span class="status-badge" style="background:#e9ecef;color:#333;">${order.status}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="actions">
-                        ${isWaiting ? `
-                            <button class="btn btn-success" onclick="verifyPayment('${order.order_number}', this)">
-                                <i class="fas fa-check"></i> Verifikasi
-                            </button>
-                            <button class="btn btn-danger" onclick="cancelOrder('${order.order_number}', this)">
-                                <i class="fas fa-times"></i> Batal
-                            </button>
-                        ` : ''}
-                        ${isSuccess ? `
-                            <button class="btn btn-secondary" disabled>
-                                <i class="fas fa-check-circle"></i> Selesai
-                            </button>
-                        ` : ''}
-                        ${isCancelled ? `
-                            <button class="btn btn-secondary" disabled>
-                                <i class="fas fa-times-circle"></i> Dibatalkan
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
+            if (error) throw error;
 
-    } catch (error) {
-        console.error('❌ Error loading orders:', error);
-        container.innerHTML = `<div class="empty" style="color:#dc3545;">❌ Gagal memuat data: ${error.message}</div>`;
+            const order = data[0];
+            console.log('✅ Order updated:', order);
+
+            // 🔥 Kirim WA ke Customer
+            await sendWhatsAppWAHA(order.customer_phone, getCustomerMessage(order));
+
+            // 🔥 Kirim WA ke Admin
+            await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, getAdminMessage(order));
+
+            alert('✅ Pembayaran berhasil diverifikasi! WA notifikasi terkirim.');
+
+            // 🔥 Refresh daftar
+            loadOrders();
+
+        } catch (error) {
+            console.error('❌ Error:', error);
+            alert('❌ Gagal verifikasi: ' + error.message);
+        }
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Verifikasi';
+        }
     }
-}
 
-// ============================================
-// AUTO REFRESH (30 detik)
-// ============================================
-setInterval(loadOrders, 30000);
+    // ============================================
+    // FUNGSI BATAL
+    // ============================================
+    async function cancelOrder(orderNumber, btn) {
+        if (!confirm('Yakin ingin membatalkan pesanan ini?')) return;
 
-// ============================================
-// INIT
-// ============================================
-document.addEventListener('DOMContentLoaded', loadOrders);
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
 
-console.log('✅ Admin panel loaded!');
+        try {
+            const { error } = await supabaseClient
+                .from('order_fried_chicken')
+                .update({
+                    payment_status: 'Pembayaran Dibatalkan',
+                    status: 'cancelled',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('order_number', orderNumber);
+
+            if (error) throw error;
+
+            alert('✅ Pesanan dibatalkan.');
+            loadOrders();
+
+        } catch (error) {
+            console.error('❌ Error:', error);
+            alert('❌ Gagal batalkan: ' + error.message);
+        }
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-times"></i> Batal';
+        }
+    }
+
+    // ============================================
+    // LOAD ORDERS
+    // ============================================
+    async function loadOrders() {
+        const container = document.getElementById('ordersContainer');
+        container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>';
+
+        try {
+            // Ambil semua order, urutkan dari terbaru
+            const { data, error } = await supabaseClient
+                .from('order_fried_chicken')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Update stats
+            const waiting = data.filter(o => o.payment_status === 'Menunggu Verifikasi Pembayaran');
+            const success = data.filter(o => o.payment_status === 'Pembayaran Berhasil');
+            
+            document.getElementById('statWaiting').textContent = waiting.length;
+            document.getElementById('statSuccess').textContent = success.length;
+            document.getElementById('statTotal').textContent = data.length;
+            document.getElementById('orderCount').textContent = waiting.length;
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty"><i class="fas fa-inbox fa-3x"></i><p>Belum ada pesanan</p></div>';
+                return;
+            }
+
+            // Render cards
+            container.innerHTML = data.map(order => {
+                const statusClass = order.payment_status === 'Pembayaran Berhasil' ? 'verified' :
+                                   order.payment_status === 'Menunggu Verifikasi Pembayaran' ? 'waiting' :
+                                   order.payment_status === 'Pembayaran Dibatalkan' ? 'cancelled' : '';
+                
+                const isWaiting = order.payment_status === 'Menunggu Verifikasi Pembayaran';
+                const isSuccess = order.payment_status === 'Pembayaran Berhasil';
+                const isCancelled = order.payment_status === 'Pembayaran Dibatalkan';
+
+                return `
+                    <div class="order-card">
+                        <div class="info">
+                            <div class="name">${order.customer_name}</div>
+                            <div class="detail">
+                                📋 ${order.order_number} | 📱 ${order.customer_phone} | 📅 ${new Date(order.created_at).toLocaleDateString('id-ID')}
+                            </div>
+                            <div class="detail">📍 ${order.customer_address}</div>
+                            <div class="total">💰 Rp ${order.total.toLocaleString()}</div>
+                            <div>
+                                <span class="status-badge ${statusClass}">${order.payment_status}</span>
+                                ${order.status ? `<span class="status-badge" style="background:#e9ecef;color:#333;">${order.status}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="actions">
+                            ${isWaiting ? `
+                                <button class="btn btn-success" onclick="verifyPayment('${order.order_number}', this)">
+                                    <i class="fas fa-check"></i> Verifikasi
+                                </button>
+                                <button class="btn btn-danger" onclick="cancelOrder('${order.order_number}', this)">
+                                    <i class="fas fa-times"></i> Batal
+                                </button>
+                            ` : ''}
+                            ${isSuccess ? `
+                                <button class="btn btn-secondary" disabled>
+                                    <i class="fas fa-check-circle"></i> Selesai
+                                </button>
+                            ` : ''}
+                            ${isCancelled ? `
+                                <button class="btn btn-secondary" disabled>
+                                    <i class="fas fa-times-circle"></i> Dibatalkan
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('❌ Error loading orders:', error);
+            container.innerHTML = `<div class="empty" style="color:#dc3545;">❌ Gagal memuat data: ${error.message}</div>`;
+        }
+    }
+
+    // ============================================
+    // AUTO REFRESH (30 detik)
+    // ============================================
+    setInterval(loadOrders, 30000);
+
+    // ============================================
+    // INIT
+    // ============================================
+    document.addEventListener('DOMContentLoaded', loadOrders);
+
+    // 🔥 EXPOSE FUNGSI KE GLOBAL (untuk onclick di HTML)
+    window.verifyPayment = verifyPayment;
+    window.cancelOrder = cancelOrder;
+
+    console.log('✅ Admin panel loaded!');
+})();
 </script>
 </body>
 </html>
