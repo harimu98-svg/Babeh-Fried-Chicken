@@ -21,7 +21,7 @@ exports.handler = async function(event, context) {
             };
         }
 
-        const BASE_URL = 'https://api-sandbox.collaborator.komerce.id/user';
+        const BASE_URL = 'https://api.collaborator.komerce.id/user';
         const GENERATE_ENDPOINT = `${BASE_URL}/api/v1/qrisly/generate-qris`;
 
         const { amount, qris_id, order_number } = JSON.parse(event.body);
