@@ -28,7 +28,7 @@ exports.handler = async function(event, context) {
 
         console.log(`🔄 Generating QRIS for order: ${order_number}`);
         console.log(`📌 Amount: ${amount}`);
-        console.log(`📌 QRIS ID: ${qris_id || 761}`);
+        console.log(`📌 QRIS ID: ${qris_id || 129}`);
 
         const response = await fetch(GENERATE_ENDPOINT, {
             method: 'POST',
@@ -37,7 +37,7 @@ exports.handler = async function(event, context) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                qris_id: qris_id || 761,
+                qris_id: qris_id || 129,
                 amount: amount,
                 output_type: 'image',
                 unique_amount: true
