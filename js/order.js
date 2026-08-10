@@ -63,12 +63,14 @@ async function sendWhatsAppWAHA(phoneNumber, message) {
 // ============================================
 // SEND NOTIFICATIONS
 // ============================================
-async function sendCustomerNotification(orderData) {
-    const message = `*🍗 Babeh Fried Chicken - Pesanan Berhasil!*
+
+// 🔥 NOTIFIKASI KE CUSTOMER SAAT BAYAR
+async function sendPaymentConfirmationNotification(orderData) {
+    const customerMessage = `*🍗 Babeh Fried Chicken - Konfirmasi Pembayaran!*
 
 Halo *${orderData.customer_name}*,
 
-Pesanan Anda telah kami terima dengan detail:
+Kami menerima konfirmasi pembayaran untuk pesanan Anda:
 
 📋 *No. Pesanan:* ${orderData.order_number}
 📅 *Tanggal:* ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -79,72 +81,18 @@ ${orderData.items.map(item =>
     `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)} (${item.weight || 250}g)`
 ).join('\n')}
 
-📊 *Ringkasan:*
-• Berat Total: ${orderData.total_berat}g
-• Subtotal: Rp ${formatRupiah(orderData.subtotal)}
-• Ongkir: Rp ${formatRupiah(orderData.shipping_cost)}
-• *Total: Rp ${formatRupiah(orderData.total)}*
+📊 *Total: Rp ${formatRupiah(orderData.total)}*
 
 📍 *Alamat Pengiriman:*
 ${orderData.customer_address}
 
-📌 *Status:* Menunggu Pembayaran
-
-*📱 Cara Bayar:*
-Scan QRIS di bawah ini dan transfer sesuai total pesanan.
-Pesanan akan otomatis dibatalkan jika tidak dibayar dalam 10 menit.
-
-Terima kasih sudah order di Babeh Fried Chicken! 🍗
-
-_*Babeh Fried Chicken - Rasa Ayam yang Bikin Nagih!*_`;
-
-    await sendWhatsAppWAHA(orderData.customer_phone, message);
-}
-
-async function sendAdminNotification(orderData) {
-    const message = `*📢 PESANAN BARU Babeh Fried Chicken!*
-
-Pesanan baru masuk:
-
-📋 *No. Pesanan:* ${orderData.order_number}
-👤 *Customer:* ${orderData.customer_name}
-📱 *WA:* ${orderData.customer_phone}
-📍 *Alamat:* ${orderData.customer_address}
-
-*📦 Detail Pesanan:*
-${orderData.items.map(item => 
-    `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)} (${item.weight || 250}g)`
-).join('\n')}
-
-📊 *Total: Rp ${formatRupiah(orderData.total)}*
-
-💳 *Metode:* QRIS
-📌 *Status:* Menunggu Pembayaran
-
-Mohon segera proses pesanan ini. Terima kasih! 🙌`;
-
-    await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, message);
-}
-
-async function sendPaymentSuccessNotification(orderData) {
-    const customerMessage = `*✅ PEMBAYARAN BERHASIL! Babeh Fried Chicken*
-
-Halo *${orderData.customer_name}*,
-
-Pembayaran untuk pesanan *${orderData.order_number}* telah berhasil!
-
-📋 *Ringkasan Pesanan:*
-${orderData.items.map(item => 
-    `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)}`
-).join('\n')}
-
-💰 *Total: Rp ${formatRupiah(orderData.total)}*
-
 📌 *Status:* Menunggu Verifikasi Pembayaran
 
-*🍗 Admin akan segera menghubungi Anda untuk konfirmasi!*
+*📱 Selanjutnya:*
+Admin kami akan segera memverifikasi pembayaran Anda.
+Anda akan mendapatkan konfirmasi setelah pembayaran terverifikasi.
 
-Terima kasih sudah order di Babeh Fried Chicken! 🙏
+Terima kasih sudah order di Babeh Fried Chicken! 🍗
 
 _*Babeh Fried Chicken - Rasa Ayam yang Bikin Nagih!*_`;
 
@@ -163,7 +111,35 @@ Mohon segera verifikasi. 🚀`;
     await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, adminMessage);
 }
 
-async function sendOrderCancelledNotification(orderData) {
+// 🔥 NOTIFIKASI KE CUSTOMER SAAT CANCEL
+async function sendOrderCancelledToCustomer(orderData) {
+    const message = `*⏰ PESANAN DIBATALKAN!*
+
+Halo *${orderData.customer_name}*,
+
+Pesanan Anda dengan nomor *${orderData.order_number}* telah dibatalkan secara otomatis karena melewati batas waktu pembayaran 10 menit.
+
+📋 *Detail Pesanan:*
+${orderData.items.map(item => 
+    `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)}`
+).join('\n')}
+
+💰 *Total: Rp ${formatRupiah(orderData.total)}*
+📌 *Status:* ❌ Dibatalkan
+
+*⚠️ PENTING:*
+Jika Anda sudah melakukan pembayaran, segera hubungi admin di:
+📱 *082121266056*
+
+Terima kasih. 🙏
+
+_*Babeh Fried Chicken - Rasa Ayam yang Bikin Nagih!*_`;
+
+    await sendWhatsAppWAHA(orderData.customer_phone, message);
+}
+
+// 🔥 NOTIFIKASI KE ADMIN SAAT CANCEL
+async function sendOrderCancelledToAdmin(orderData) {
     const message = `*⏰ PESANAN DIBATALKAN!*
 
 Pesanan *${orderData.order_number}* oleh *${orderData.customer_name}* telah dibatalkan otomatis karena melewati batas waktu pembayaran 10 menit.
@@ -172,6 +148,46 @@ Pesanan *${orderData.order_number}* oleh *${orderData.customer_name}* telah diba
 📌 Status: ❌ Dibatalkan Otomatis
 
 Silakan hubungi customer jika diperlukan.`;
+
+    await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, message);
+}
+
+// 🔥 NOTIFIKASI KE CUSTOMER SAAT PEMBAYARAN BERHASIL
+async function sendPaymentSuccessToCustomer(orderData) {
+    const message = `*✅ PEMBAYARAN BERHASIL! Babeh Fried Chicken*
+
+Halo *${orderData.customer_name}*,
+
+Pembayaran untuk pesanan *${orderData.order_number}* telah berhasil!
+
+📋 *Ringkasan Pesanan:*
+${orderData.items.map(item => 
+    `- ${item.name} x${item.quantity} = Rp ${formatRupiah(item.price * item.quantity)}`
+).join('\n')}
+
+💰 *Total: Rp ${formatRupiah(orderData.total)}*
+
+📌 *Status:* In Process
+
+*🍗 Pesanan akan segera diproses dan dikirim!*
+
+Terima kasih sudah order di Babeh Fried Chicken! 🙏
+
+_*Babeh Fried Chicken - Rasa Ayam yang Bikin Nagih!*_`;
+
+    await sendWhatsAppWAHA(orderData.customer_phone, message);
+}
+
+// 🔥 NOTIFIKASI KE ADMIN SAAT PEMBAYARAN BERHASIL
+async function sendPaymentSuccessToAdmin(orderData) {
+    const message = `*✅ PEMBAYARAN BERHASIL!*
+
+Pesanan *${orderData.order_number}* sudah dibayar oleh *${orderData.customer_name}*.
+
+💰 Total: Rp ${formatRupiah(orderData.total)}
+📌 Status: In Process
+
+Segera proses pengiriman pesanan ini. 🚀`;
 
     await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, message);
 }
@@ -229,7 +245,7 @@ function loadOrderItems() {
                 <div class="item-info">
                     <span class="item-name">${item.name}</span>
                     <span class="item-price">Rp ${formatRupiah(item.price)} x ${item.quantity}</span>
-                    <span class="item-weight"><i class="fas fa-weight"></i> ${weight}g}</span>
+                    <span class="item-weight"><i class="fas fa-weight"></i> ${weight}g</span>
                 </div>
                 <div class="item-controls">
                     <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">−</button>
@@ -467,7 +483,7 @@ function displayShippingOptions(costs) {
 }
 
 // ============================================
-// 🔥 QRIS STATIS - PAKAI GAMBAR
+// QRIS STATIS - PAKAI GAMBAR
 // ============================================
 
 // Toast notification
@@ -604,7 +620,7 @@ function updateTimerDisplay() {
 }
 
 // ============================================
-// CANCEL ORDER
+// CANCEL ORDER - DENGAN WA KE CUSTOMER
 // ============================================
 window.cancelOrder = async function(orderNumber) {
     if (timerInterval) {
@@ -614,26 +630,26 @@ window.cancelOrder = async function(orderNumber) {
     
     try {
         // Update status di Supabase
-        const { error } = await window.supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('order_fried_chicken')
             .update({
                 payment_status: 'Pembayaran Dibatalkan',
                 status: 'cancelled',
                 updated_at: new Date().toISOString()
             })
-            .eq('order_number', orderNumber);
+            .eq('order_number', orderNumber)
+            .select();
 
         if (error) throw error;
         
-        // Kirim notifikasi WA
-        const { data: orderData } = await window.supabaseClient
-            .from('order_fried_chicken')
-            .select('*')
-            .eq('order_number', orderNumber)
-            .single();
+        if (data && data.length > 0) {
+            const orderData = data[0];
             
-        if (orderData) {
-            await sendOrderCancelledNotification(orderData);
+            // 🔥 WA KE CUSTOMER
+            await sendOrderCancelledToCustomer(orderData);
+            
+            // 🔥 WA KE ADMIN
+            await sendOrderCancelledToAdmin(orderData);
         }
         
         showToastNotification('❌ Pesanan dibatalkan', 'error');
@@ -659,6 +675,7 @@ window.confirmPayment = async function(orderNumber) {
             .from('order_fried_chicken')
             .update({
                 payment_status: 'Menunggu Verifikasi Pembayaran',
+                status: 'pending',
                 updated_at: new Date().toISOString()
             })
             .eq('order_number', orderNumber)
@@ -667,7 +684,8 @@ window.confirmPayment = async function(orderNumber) {
         if (error) throw error;
         
         if (data && data.length > 0) {
-            await sendPaymentSuccessNotification(data[0]);
+            // 🔥 WA KE CUSTOMER + ADMIN
+            await sendPaymentConfirmationNotification(data[0]);
         }
         
         showToastNotification('✅ Pembayaran dikonfirmasi! Admin akan menghubungi Anda.', 'success', 4000);
@@ -682,6 +700,47 @@ window.confirmPayment = async function(orderNumber) {
         showToastNotification('Gagal konfirmasi pembayaran', 'error');
     }
 };
+
+// ============================================
+// UPDATE ORDER PAYMENT STATUS (ADMIN VERIFIKASI)
+// ============================================
+async function updateOrderPaymentStatus(orderNumber, status) {
+    try {
+        const updateData = {
+            qrisly_status: status,
+            updated_at: new Date().toISOString()
+        };
+        
+        if (status === 'paid') {
+            updateData.payment_status = 'Pembayaran Berhasil';
+            updateData.payment_verified_at = new Date().toISOString();
+            updateData.status = 'In Process';
+        } else if (status === 'expired') {
+            updateData.payment_status = 'Pembayaran Kadaluarsa';
+        }
+        
+        const { data, error } = await window.supabaseClient
+            .from('order_fried_chicken')
+            .update(updateData)
+            .eq('order_number', orderNumber)
+            .select();
+
+        if (error) throw error;
+        
+        console.log(`✅ Order status updated: ${orderNumber} → ${status}`);
+        
+        if (status === 'paid' && data && data.length > 0) {
+            // 🔥 WA KE CUSTOMER + ADMIN
+            await sendPaymentSuccessToCustomer(data[0]);
+            await sendPaymentSuccessToAdmin(data[0]);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error updating order:', error);
+        return false;
+    }
+}
 
 // ============================================
 // RESET ORDER DATA
@@ -776,7 +835,7 @@ function startPaymentPolling(orderNumber) {
 }
 
 // ============================================
-// SUBMIT ORDER
+// SUBMIT ORDER - TANPA WA NOTIFICATION
 // ============================================
 async function submitOrder(event) {
     event.preventDefault();
@@ -833,6 +892,8 @@ async function submitOrder(event) {
 
         const savedOrder = data[0];
         console.log('✅ Order saved:', savedOrder);
+
+        // ❌ TIDAK ADA WA NOTIFICATION DI SINI
 
         localStorage.removeItem('currentOrder');
         window.updateOrderBadge();
