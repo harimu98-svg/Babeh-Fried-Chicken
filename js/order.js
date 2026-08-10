@@ -519,7 +519,7 @@ function displayShippingOptions(costs) {
 // ============================================
 async function generateQRISPayment(orderData) {
     try {
-        const qrisId = window.QRISLY_CONFIG?.qrisId || 761;
+        const qrisId = window.QRISLY_CONFIG?.qrisId || 129;
         const response = await fetch('/.netlify/functions/qrisly-generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
