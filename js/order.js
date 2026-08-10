@@ -13,120 +13,8 @@ const WAHA_API_URL = 'https://waha-yetv8qi4e3zk.anakit.sumopod.my.id/api/sendTex
 const WAHA_API_KEY = 'sfcoGbpdLDkGZhKw2rx8sbb14vf4d8V6';
 const WAHA_ADMIN_GROUP = '6282121266056@c.us';
 
-// ============================================
-// QRIS STATIS (DARI QRISLY)
-// ============================================
-// 🔥 Ganti dengan QRIS statis Anda (dari dashboard QRISLY atau bank)
-const STATIC_QRIS = '00020101021126580013ID.NETZME.WWW01189360081401001769850208oOQc4v3U0303UMI51440014ID.CO.QRIS.WWW0215ID10254577823040303UMI5204723053033605802ID5924Babeh Fried Chicken - Curug6005DEPOK61051651762070703A01630455D8';
-
-// ============================================
-// QRIS DINAMIS - SELF HOSTED (Tanpa QRISLY)
-// ============================================
-
-/**
- * Parse QRIS string ke object tags
- */
-function parseQRIS(qrisString) {
-    const tags = {};
-    let i = 0;
-    while (i < qrisString.length) {
-        const tag = qrisString.substring(i, i + 2);
-        i += 2;
-        const length = parseInt(qrisString.substring(i, i + 2));
-        i += 2;
-        const value = qrisString.substring(i, i + length);
-        i += length;
-        tags[tag] = value;
-    }
-    return tags;
-}
-
-/**
- * Build QRIS string dari object tags
- */
-function buildQRIS(tags) {
-    let result = '';
-    const sortedKeys = Object.keys(tags).sort();
-    for (const key of sortedKeys) {
-        const value = tags[key];
-        const length = String(value.length).padStart(2, '0');
-        result += key + length + value;
-    }
-    return result;
-}
-
-/**
- * Hitung CRC16-CCITT untuk QRIS
- */
-function calculateCRC16(data) {
-    let crc = 0xFFFF;
-    const polynomial = 0x1021;
-    for (let i = 0; i < data.length; i++) {
-        crc ^= data.charCodeAt(i) << 8;
-        for (let j = 0; j < 8; j++) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ polynomial;
-            } else {
-                crc <<= 1;
-            }
-            crc &= 0xFFFF;
-        }
-    }
-    return crc.toString(16).toUpperCase().padStart(4, '0');
-}
-
-/**
- * Generate QRIS Dinamis - Self Hosted
- * @param {string} staticQRIS - QRIS statis string
- * @param {number} amount - Total pembayaran
- * @param {number} uniqueId - Unique ID untuk tracking
- * @param {string} merchantName - Nama merchant (opsional)
- */
-function generateDynamicQRIS(staticQRIS, amount, uniqueId, merchantName = 'Babeh Fried Chicken') {
-    try {
-        // Parse QRIS statis
-        const tags = parseQRIS(staticQRIS);
-        
-        // Tambah atau update tag 54 (Amount)
-        tags['54'] = String(amount);
-        
-        // Hapus tag yang tidak diperlukan
-        delete tags['63']; // CRC akan dihitung ulang
-        delete tags['01']; // Unique ID (tidak semua app support)
-        delete tags['62']; // Additional Data
-        
-        // Update nama merchant
-        tags['59'] = merchantName.substring(0, 25);
-        
-        // Build QRIS sementara untuk hitung CRC
-        const tempQRIS = buildQRIS(tags);
-        
-        // Hitung CRC
-        const crc = calculateCRC16(tempQRIS);
-        tags['63'] = crc;
-        
-        // Build final QRIS
-        const dynamicQRIS = buildQRIS(tags);
-        
-        console.log('✅ QRIS Dinamis generated!');
-        console.log(`📌 Amount: ${amount}`);
-        console.log(`📌 Unique ID: ${uniqueId}`);
-        console.log(`📌 QRIS Length: ${dynamicQRIS.length}`);
-        
-        return {
-            success: true,
-            qrisString: dynamicQRIS,
-            amount: amount,
-            uniqueId: uniqueId,
-            historyId: uniqueId,
-            tags: tags
-        };
-        
-    } catch (error) {
-        console.error('❌ QRIS generate error:', error);
-        return { success: false, error: error.message };
-    }
-}
+let searchTimeout;
+let paymentPollingInterval = null;
 
 // ============================================
 // FUNGSI SEND WHATSAPP VIA WAHA
@@ -200,8 +88,8 @@ ${orderData.customer_address}
 📌 *Status:* Menunggu Pembayaran QRIS
 
 *📱 Cara Bayar:*
-Scan QRIS yang muncul di layar Anda.
-Pembayaran akan otomatis terverifikasi setelah transfer.
+Scan QRIS di bawah ini dan transfer sesuai total pesanan.
+Kirim bukti pembayaran ke WhatsApp admin.
 
 Terima kasih sudah order di Babeh Fried Chicken! 🍗
 
@@ -275,19 +163,6 @@ Pesanan *${orderData.order_number}* sudah dibayar oleh *${orderData.customer_nam
 Segera proses pengiriman pesanan ini. 🚀`;
 
     await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, adminMessage);
-}
-
-async function sendPaymentExpiredNotification(orderData) {
-    const message = `*⏰ PEMBAYARAN KADALUARSA!*
-
-Pesanan *${orderData.order_number}* oleh *${orderData.customer_name}* telah kadaluarsa karena tidak ada pembayaran.
-
-💰 Total: Rp ${formatRupiah(orderData.total)}
-📌 Status: ❌ Kadaluarsa
-
-Silakan hubungi customer untuk konfirmasi.`;
-
-    await sendWhatsAppWAHA(WAHA_ADMIN_GROUP, message);
 }
 
 // ============================================
@@ -425,8 +300,6 @@ function removeItem(productId) {
 // ============================================
 // SEARCH DESTINATION
 // ============================================
-let searchTimeout;
-
 async function searchDestination(query) {
     const resultsContainer = document.getElementById('search-results');
     if (!resultsContainer) return;
@@ -583,44 +456,64 @@ function displayShippingOptions(costs) {
 }
 
 // ============================================
-// GENERATE QRIS - SELF HOSTED (TANPA QRISLY)
+// QRIS STATIS - PAKAI GAMBAR
 // ============================================
-async function generateQRISPayment(orderData) {
-    try {
-        console.log('🔄 Generating QRIS Dinamis (Self-Hosted)...');
-        
-        const uniqueId = Date.now() % 10000;
-        const result = generateDynamicQRIS(
-            STATIC_QRIS,
-            orderData.total,
-            uniqueId,
-            'Babeh Fried Chicken'
-        );
-        
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-        
-        console.log('✅ QRIS Dinamis generated!');
-        console.log('📌 Amount:', result.amount);
-        console.log('📌 History ID:', result.historyId);
-        console.log('📌 QRIS Length:', result.qrisString.length);
-        
-        return {
-            historyId: result.historyId,
-            qrImage: result.qrisString,
-            expiredAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-            environment: 'self-hosted'
-        };
-    } catch (error) {
-        console.error('❌ QRIS generate error:', error);
-        throw error;
+function showQRISPaymentModal(orderData) {
+    const modal = createQRISModal();
+    const content = document.getElementById('qris-modal-content');
+    if (!content) return;
+
+    // 🔥 QRIS STATIS dari file images/qris.jpg
+    content.innerHTML = `
+        <div style="position:relative; text-align:center; padding:10px 0;">
+            <h3 style="color:#dc3545; margin-bottom:15px;">
+                <i class="fas fa-qrcode"></i> Scan QRIS untuk Membayar
+            </h3>
+            <p>No. Pesanan: <strong>${orderData.order_number}</strong></p>
+            <p style="font-size:1.2rem; margin:10px 0;">
+                Total: <strong style="color:#dc3545;">Rp ${formatRupiah(orderData.total)}</strong>
+            </p>
+            <div id="qris-container" style="margin:20px auto; padding:15px; background:#f8f9fa; border-radius:10px; max-width:300px; min-height:200px; display:flex; align-items:center; justify-content:center;">
+                <img src="images/qris.jpg" alt="QRIS Payment" 
+                     style="max-width:100%; border-radius:8px;"
+                     onerror="this.style.display='none'; document.getElementById('qris-error').style.display='block';">
+                <div id="qris-error" style="display:none; color:#dc3545; padding:10px;">
+                    <i class="fas fa-exclamation-circle"></i> Gambar QRIS tidak ditemukan
+                    <br>
+                    <small>Pastikan file images/qris.jpg ada</small>
+                </div>
+            </div>
+            <p style="font-size:0.85rem; color:#6c757d; margin-top:8px;">
+                <i class="fas fa-info-circle"></i> Transfer sesuai total pesanan ke rekening BSI
+            </p>
+            <p style="font-size:0.85rem; color:#6c757d;">
+                <strong>BSI: 1234567890</strong> a.n. Babeh Fried Chicken
+            </p>
+            <div id="qris-status" style="margin:15px 0; padding:10px; background:#fff3cd; border-radius:8px; color:#856404; font-size:0.9rem;">
+                ⏳ Menunggu verifikasi pembayaran...
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <button onclick="closeQRISModal()" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+                <button onclick="manualCheckPayment('${orderData.order_number}')" style="padding:8px 20px; background:#dc3545; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;">
+                    <i class="fas fa-sync"></i> Cek Status
+                </button>
+            </div>
+            <p style="font-size:0.75rem; color:#6c757d; margin-top:10px;">
+                Kirim bukti transfer ke WhatsApp admin: <strong>082121266056</strong>
+            </p>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+    
+    // 🔥 POLLING dari Supabase (tanpa QRISLY)
+    if (orderData.order_number) {
+        startPaymentPolling(orderData.order_number);
     }
 }
 
-// ============================================
-// SHOW QRIS MODAL
-// ============================================
 function createQRISModal() {
     let modal = document.getElementById('qris-modal');
     if (modal) return modal;
@@ -643,87 +536,23 @@ function closeQRISModal() {
     }
 }
 
-function showQRISPaymentModal(orderData) {
-    const modal = createQRISModal();
-    const content = document.getElementById('qris-modal-content');
-    if (!content) return;
-
-    const qrData = orderData.qrisly_qr_image;
-    const isQrisString = qrData && typeof qrData === 'string' && qrData.length > 50;
-    const isSelfHosted = orderData.environment === 'self-hosted';
-
-    content.innerHTML = `
-        <div style="position:relative; text-align:center; padding:10px 0;">
-            ${isSelfHosted ? `<div style="position:absolute; top:-10px; right:-10px; background:#28a745; color:white; padding:4px 12px; border-radius:20px; font-size:0.6rem; font-weight:bold;">SELF HOSTED</div>` : ''}
-            <h3 style="color:#dc3545; margin-bottom:15px;"><i class="fas fa-qrcode"></i> Scan QRIS untuk Membayar</h3>
-            <p>No. Pesanan: <strong>${orderData.order_number}</strong></p>
-            <p style="font-size:1.2rem; margin:10px 0;">Total: <strong style="color:#dc3545;">Rp ${formatRupiah(orderData.total)}</strong></p>
-            <div id="qris-container" style="margin:20px auto; padding:15px; background:#f8f9fa; border-radius:10px; max-width:300px; min-height:250px; display:flex; align-items:center; justify-content:center;">
-                ${isQrisString ? `<div id="qrcode" style="width:250px; height:250px; margin:0 auto;"></div>` : `<p>QRIS tidak tersedia</p>`}
-            </div>
-            <p style="font-size:0.85rem; color:#6c757d;">⏰ Kadaluarsa: ${orderData.qrisly_expired_at ? new Date(orderData.qrisly_expired_at).toLocaleString('id-ID') : '15 menit'}</p>
-            <div id="qris-status" style="margin:15px 0; padding:10px; background:#fff3cd; border-radius:8px; color:#856404;">⏳ Menunggu pembayaran...</div>
-            <button onclick="closeQRISModal()" style="padding:8px 20px; background:#6c757d; color:white; border:none; border-radius:6px; cursor:pointer;">Tutup</button>
-            <button onclick="manualCheckPayment('${orderData.order_number}')" style="padding:8px 20px; background:#dc3545; color:white; border:none; border-radius:6px; cursor:pointer;">Cek Status</button>
-            ${isSelfHosted ? `<p style="font-size:0.7rem; color:#28a745; margin-top:10px;">⚡ Self-Hosted QRIS</p>` : ''}
-        </div>
-    `;
-
-    modal.style.display = 'flex';
-
-    if (isQrisString) {
-        setTimeout(() => {
-            const container = document.getElementById('qrcode');
-            if (container) {
-                try {
-                    container.innerHTML = '';
-                    new QRCode(container, {
-                        text: qrData,
-                        width: 250,
-                        height: 250,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.L
-                    });
-                    console.log('✅ QR Code generated!');
-                } catch (error) {
-                    console.error('❌ QRCode error:', error);
-                    const img = document.createElement('img');
-                    img.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(qrData)}&chs=300x300&choe=UTF-8`;
-                    img.style.cssText = 'max-width:100%; border-radius:8px;';
-                    const containerDiv = document.getElementById('qris-container');
-                    if (containerDiv) {
-                        containerDiv.innerHTML = '';
-                        containerDiv.appendChild(img);
-                    }
-                }
-            }
-        }, 300);
-    }
-
-    if (orderData.qrisly_history_id) {
-        startPaymentPolling(orderData.qrisly_history_id, orderData.order_number);
-    }
-}
-
 // ============================================
 // POLLING PAYMENT STATUS (DARI SUPABASE)
 // ============================================
-function startPaymentPolling(historyId, orderNumber) {
+function startPaymentPolling(orderNumber) {
     if (paymentPollingInterval) {
         clearInterval(paymentPollingInterval);
         paymentPollingInterval = null;
     }
     
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 60; // 10 menit (60 x 10 detik)
     
     paymentPollingInterval = setInterval(async () => {
         attempts++;
         console.log(`🔄 Polling attempt ${attempts} for order ${orderNumber}`);
         
         try {
-            // 🔥 CEK STATUS DARI SUPABASE
             const { data, error } = await window.supabaseClient
                 .from('order_fried_chicken')
                 .select('payment_status, qrisly_status')
@@ -735,7 +564,7 @@ function startPaymentPolling(historyId, orderNumber) {
             console.log('📊 Status dari Supabase:', data);
             const statusElement = document.getElementById('qris-status');
             
-            if (data && data.qrisly_status === 'paid') {
+            if (data && data.payment_status === 'Pembayaran Berhasil') {
                 clearInterval(paymentPollingInterval);
                 paymentPollingInterval = null;
                 
@@ -752,12 +581,12 @@ function startPaymentPolling(historyId, orderNumber) {
                     showSuccessPage(orderNumber); 
                 }, 1500);
                 
-            } else if (data && data.qrisly_status === 'expired') {
+            } else if (data && data.payment_status === 'Pembayaran Kadaluarsa') {
                 clearInterval(paymentPollingInterval);
                 paymentPollingInterval = null;
                 
                 if (statusElement) {
-                    statusElement.innerHTML = '❌ QRIS Kadaluarsa';
+                    statusElement.innerHTML = '❌ Pembayaran Kadaluarsa';
                     statusElement.style.background = '#f8d7da';
                     statusElement.style.color = '#721c24';
                 }
@@ -767,7 +596,7 @@ function startPaymentPolling(historyId, orderNumber) {
                 clearInterval(paymentPollingInterval);
                 paymentPollingInterval = null;
                 if (statusElement) {
-                    statusElement.innerHTML = '⏰ Waktu habis. Cek manual.';
+                    statusElement.innerHTML = '⏰ Waktu habis. Silakan cek manual.';
                 }
             }
             
@@ -778,20 +607,17 @@ function startPaymentPolling(historyId, orderNumber) {
 }
 
 // ============================================
-// UPDATE ORDER PAYMENT STATUS
+// UPDATE ORDER PAYMENT STATUS (MANUAL)
 // ============================================
 async function updateOrderPaymentStatus(orderNumber, status) {
     try {
         const updateData = {
-            qrisly_status: status,
+            payment_status: status === 'paid' ? 'Pembayaran Berhasil' : 'Pembayaran Kadaluarsa',
             updated_at: new Date().toISOString()
         };
         
         if (status === 'paid') {
-            updateData.payment_status = 'Pembayaran Berhasil';
             updateData.payment_verified_at = new Date().toISOString();
-        } else if (status === 'expired') {
-            updateData.payment_status = 'Pembayaran Kadaluarsa';
         }
         
         const { data, error } = await window.supabaseClient
@@ -806,8 +632,6 @@ async function updateOrderPaymentStatus(orderNumber, status) {
         
         if (status === 'paid' && data && data.length > 0) {
             await sendPaymentSuccessNotification(data[0]);
-        } else if (status === 'expired' && data && data.length > 0) {
-            await sendPaymentExpiredNotification(data[0]);
         }
         
         return true;
@@ -825,18 +649,18 @@ window.manualCheckPayment = async function(orderNumber) {
     try {
         const { data, error } = await window.supabaseClient
             .from('order_fried_chicken')
-            .select('qrisly_status, payment_status')
+            .select('payment_status, qrisly_status')
             .eq('order_number', orderNumber)
             .single();
         if (error) throw error;
-        if (data && (data.qrisly_status === 'paid' || data.payment_status === 'Pembayaran Berhasil')) {
+        if (data && data.payment_status === 'Pembayaran Berhasil') {
             showNotification('✅ Pembayaran berhasil!', 'success');
             closeQRISModal();
             showSuccessPage(orderNumber);
-        } else if (data && data.qrisly_status === 'expired') {
-            showNotification('❌ QRIS kadaluarsa', 'error');
+        } else if (data && data.payment_status === 'Pembayaran Kadaluarsa') {
+            showNotification('❌ Pembayaran kadaluarsa', 'error');
         } else {
-            showNotification('⏳ Masih menunggu pembayaran', 'info');
+            showNotification('⏳ Masih menunggu verifikasi', 'info');
         }
     } catch (error) {
         console.error('Manual check error:', error);
@@ -845,7 +669,7 @@ window.manualCheckPayment = async function(orderNumber) {
 };
 
 // ============================================
-// SUBMIT ORDER
+// SUBMIT ORDER (TANPA QRISLY)
 // ============================================
 async function submitOrder(event) {
     event.preventDefault();
@@ -886,25 +710,10 @@ async function submitOrder(event) {
         total_berat: order.total_berat || 0,
         shipping_subdistrict: subdistrictId,
         payment_method: 'QRIS',
-        payment_status: 'Menunggu Pembayaran',
-        qrisly_status: 'unpaid',
+        payment_status: 'Menunggu Verifikasi Pembayaran',
         notes: notes || '',
         status: 'pending'
     };
-
-    // 🔥 GENERATE QRIS DINAMIS (SELF-HOSTED)
-    try {
-        showNotification('🔄 Menyiapkan QRIS...', 'info');
-        const qrisResult = await generateQRISPayment(orderData);
-        orderData.qrisly_history_id = qrisResult.historyId;
-        orderData.qrisly_qr_image = qrisResult.qrImage;
-        orderData.qrisly_expired_at = qrisResult.expiredAt;
-        orderData.environment = qrisResult.environment || 'self-hosted';
-        console.log('✅ QRIS generated (self-hosted):', qrisResult.historyId);
-    } catch (error) {
-        showNotification('Gagal generate QRIS: ' + error.message, 'error');
-        return;
-    }
 
     // Submit ke Supabase
     try {
@@ -925,11 +734,8 @@ async function submitOrder(event) {
         localStorage.removeItem('currentOrder');
         window.updateOrderBadge();
 
-        if (savedOrder.qrisly_qr_image) {
-            showQRISPaymentModal(savedOrder);
-        } else {
-            showSuccessPage(orderNumber);
-        }
+        // 🔥 Tampilkan QRIS STATIS
+        showQRISPaymentModal(savedOrder);
 
     } catch (error) {
         console.error('Submit error:', error);
@@ -957,6 +763,7 @@ function showSuccessPage(orderNumber) {
             <h2>Pesanan Berhasil!</h2>
             <p>Nomor Pesanan: <strong>${orderNumber}</strong></p>
             <p>Silakan lakukan pembayaran melalui QRIS.</p>
+            <p>Kirim bukti transfer ke WhatsApp admin.</p>
             <button onclick="window.location.reload()" class="btn btn-primary">Pesan Lagi</button>
         </div>
     `;
