@@ -1,7 +1,7 @@
 // js/qrisly-config.js
 const QRISLY_CONFIG = {
     apiBaseUrl: '/.netlify/functions/qrisly',
-    qrisId: 761,
+    qrisId: 129,
     environment: 'production',
     outputType: 'image',
     uniqueAmount: true,
