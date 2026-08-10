@@ -834,9 +834,6 @@ async function submitOrder(event) {
         const savedOrder = data[0];
         console.log('✅ Order saved:', savedOrder);
 
-        await sendCustomerNotification(savedOrder);
-        await sendAdminNotification(savedOrder);
-
         localStorage.removeItem('currentOrder');
         window.updateOrderBadge();
 
